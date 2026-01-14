@@ -4,6 +4,7 @@ import { getDateInTimezone, getWeeksBetween } from '../timezone.js';
 /**
  * Generate Life Calendar Wallpaper
  * Shows weeks of life as a grid of dots, highlighting lived weeks
+ * Leaves space at top for iPhone clock/date
  */
 export function generateLifeCalendar(options) {
     const {
@@ -13,7 +14,8 @@ export function generateLifeCalendar(options) {
         accentColor,
         timezone,
         dob,
-        lifespan = 80
+        lifespan = 80,
+        clockHeight = 0.22
     } = options;
 
     // Get current date in user's timezone
@@ -26,7 +28,6 @@ export function generateLifeCalendar(options) {
         const [dobYear, dobMonth, dobDay] = dob.split('-').map(Number);
         dobDate = new Date(dobYear, dobMonth - 1, dobDay);
     } else {
-        // Default: assume user is 25 years old
         dobDate = new Date(year - 25, month - 1, day);
     }
 
@@ -37,49 +38,35 @@ export function generateLifeCalendar(options) {
     // Layout - 52 columns (weeks per year), rows = lifespan
     const cols = 52;
     const rows = lifespan;
-    const padding = width * 0.05;
-    const topPadding = height * 0.15;
-    const bottomPadding = height * 0.12;
+
+    // Leave space for clock at top
+    // Leave space for clock at top (with extra padding)
+    const clockSpace = height * (clockHeight + 0.05); // Extra clearance
+    const padding = width * 0.15;  // 15% horizontal padding (slightly less than year due to 52 cols)
+    const statsHeight = height * 0.05;
+    const bottomMargin = height * 0.05;
 
     const availableWidth = width - (padding * 2);
-    const availableHeight = height - topPadding - bottomPadding;
+    // Constrain height
+    const availableHeight = height - clockSpace - statsHeight - bottomMargin;
 
-    const gap = Math.max(1, width * 0.002);
+    // Tighter gap
+    const gap = Math.max(1.5, width * 0.003);
     const cellWidth = (availableWidth - (gap * (cols - 1))) / cols;
-    const cellHeight = (availableHeight - (gap * (rows - 1))) / rows;
-    const cellSize = Math.min(cellWidth, cellHeight);
-    const dotRadius = cellSize / 2 - 0.5;
+    // Keep it roughly square
+    const cellSize = cellWidth;
+    const dotRadius = (cellSize / 2) * 0.85;
 
-    // Center the grid
+    // Center grid
     const gridWidth = (cellSize * cols) + (gap * (cols - 1));
     const gridHeight = (cellSize * rows) + (gap * (rows - 1));
     const startX = (width - gridWidth) / 2;
-    const startY = topPadding + (availableHeight - gridHeight) / 2;
+    const startY = clockSpace + (height * 0.02);
 
     let content = '';
 
     // Background
     content += rect(0, 0, width, height, parseColor(bgColor));
-
-    // Title
-    content += text(width / 2, topPadding * 0.4, 'Life in Weeks', {
-        fill: parseColor(accentColor),
-        fontSize: width * 0.06,
-        fontWeight: '700',
-        textAnchor: 'middle',
-        dominantBaseline: 'middle'
-    });
-
-    // Age display
-    const yearsLived = Math.floor(weeksLived / 52);
-    const weeksIntoYear = weeksLived % 52;
-    content += text(width / 2, topPadding * 0.7, `${yearsLived} years, ${weeksIntoYear} weeks`, {
-        fill: colorWithAlpha('#ffffff', 0.5),
-        fontSize: width * 0.03,
-        fontWeight: '400',
-        textAnchor: 'middle',
-        dominantBaseline: 'middle'
-    });
 
     // Week grid (dots)
     for (let i = 0; i < totalWeeks; i++) {
@@ -92,34 +79,30 @@ export function generateLifeCalendar(options) {
         const isCurrentWeek = i === weeksLived;
 
         let fillColor;
+        let radius = dotRadius;
+
         if (isCurrentWeek) {
             fillColor = parseColor(accentColor);
+            radius = dotRadius * 1.15;
         } else if (isLived) {
-            fillColor = colorWithAlpha(parseColor(accentColor), 0.7);
+            fillColor = colorWithAlpha(parseColor(accentColor), 0.75);
         } else {
-            fillColor = colorWithAlpha('#ffffff', 0.05);
+            fillColor = colorWithAlpha('#ffffff', 0.06);
         }
 
-        content += circle(cx, cy, dotRadius, fillColor);
+        content += circle(cx, cy, radius, fillColor);
     }
 
-    // Stats at bottom
+    // Stats just below grid
     const progressPercent = Math.round((weeksLived / totalWeeks) * 100);
     const weeksRemaining = totalWeeks - weeksLived;
-    const yearsRemaining = Math.floor(weeksRemaining / 52);
+    const statsY = startY + gridHeight + (height * 0.025);
 
-    content += text(width / 2, height - bottomPadding * 0.6, `${progressPercent}% · ${weeksRemaining.toLocaleString()} weeks remaining`, {
-        fill: colorWithAlpha('#ffffff', 0.4),
-        fontSize: width * 0.025,
-        fontWeight: '400',
-        textAnchor: 'middle',
-        dominantBaseline: 'middle'
-    });
-
-    content += text(width / 2, height - bottomPadding * 0.3, `~${yearsRemaining} years to make count`, {
-        fill: colorWithAlpha('#ffffff', 0.3),
-        fontSize: width * 0.02,
-        fontWeight: '400',
+    content += text(width / 2, statsY, `${weeksRemaining.toLocaleString()} weeks left · ${progressPercent}% lived`, {
+        fill: colorWithAlpha('#ffffff', 0.5),
+        fontSize: width * 0.022,
+        fontWeight: '500',
+        fontFamily: '"SF Mono", "Menlo", "Courier New", monospace',
         textAnchor: 'middle',
         dominantBaseline: 'middle'
     });
