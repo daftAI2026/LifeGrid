@@ -162,3 +162,6 @@ If you find this project useful, please consider giving it a star! It helps othe
 ---
 
 Made with ❤️ for mindful living
+
+<!-- Tags -->
+`#ios` `#iphone` `#wallpaper` `#productivity` `#motivation` `#calendar` `#year-progress` `#life-grid` `#goal-tracking` `#cloudflare-workers` `#serverless` `#javascript` `#svg` `#design` `#minimalism`
