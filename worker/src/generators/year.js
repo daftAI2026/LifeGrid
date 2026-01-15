@@ -84,13 +84,14 @@ export function generateYearCalendar(options) {
     const progressPercent = Math.round((dayOfYear / totalDays) * 100);
     const statsY = startY + gridHeight + (height * 0.025);
 
-    content += text(width / 2, statsY, `${daysRemaining} days left · ${progressPercent}% complete`, {
-        fill: colorWithAlpha('#ffffff', 0.5),
-        fontSize: width * 0.026,
-        fontWeight: '500',
-        fontFamily: '"SF Mono", "Menlo", "Courier New", monospace',
+    const statsContent = `<tspan fill="${parseColor(accentColor)}" font-family="Inter" font-weight="500">${daysRemaining} days left</tspan>` +
+        `<tspan fill="rgba(255,255,255,0.5)" font-family="'SF Mono', 'Menlo', 'Courier New', monospace" font-weight="400"> · ${progressPercent}% complete</tspan>`;
+
+    content += text(width / 2, statsY, statsContent, {
+        fontSize: width * 0.032,
         textAnchor: 'middle',
-        dominantBaseline: 'middle'
+        dominantBaseline: 'middle',
+        escape: false
     });
 
     return createSVG(width, height, content);

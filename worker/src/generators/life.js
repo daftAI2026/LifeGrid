@@ -98,13 +98,14 @@ export function generateLifeCalendar(options) {
     const weeksRemaining = totalWeeks - weeksLived;
     const statsY = startY + gridHeight + (height * 0.025);
 
-    content += text(width / 2, statsY, `${weeksRemaining.toLocaleString()} weeks left · ${progressPercent}% lived`, {
-        fill: colorWithAlpha('#ffffff', 0.5),
+    const statsContent = `<tspan fill="${parseColor(accentColor)}" font-family="Inter" font-weight="500">${weeksRemaining.toLocaleString()} weeks left</tspan>` +
+        `<tspan fill="rgba(255,255,255,0.5)" font-family="'SF Mono', 'Menlo', 'Courier New', monospace" font-weight="400"> · ${progressPercent}% lived</tspan>`;
+
+    content += text(width / 2, statsY, statsContent, {
         fontSize: width * 0.022,
-        fontWeight: '500',
-        fontFamily: '"SF Mono", "Menlo", "Courier New", monospace',
         textAnchor: 'middle',
-        dominantBaseline: 'middle'
+        dominantBaseline: 'middle',
+        escape: false
     });
 
     return createSVG(width, height, content);
