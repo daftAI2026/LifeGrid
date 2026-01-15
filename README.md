@@ -157,7 +157,7 @@ Please ensure your code follows the existing style and includes appropriate test
 
 If you find this project useful, please consider giving it a star! It helps others discover the project.
 
-**License**: MIT
+**License**: Apache License 2.0
 
 ---
 
