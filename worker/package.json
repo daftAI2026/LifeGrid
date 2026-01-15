@@ -10,7 +10,8 @@
     "tail": "wrangler tail"
   },
   "dependencies": {
-    "@resvg/resvg-wasm": "^2.6.0"
+    "@resvg/resvg-wasm": "^2.6.0",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "wrangler": "^3.0.0"
