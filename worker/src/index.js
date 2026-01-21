@@ -58,6 +58,7 @@ export default {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Expose-Headers': 'X-Cache-Status, X-Cache-Key, X-Server-Cache'
         };
 
         // Handle preflight
@@ -117,15 +118,62 @@ async function handleGenerate(request, url, corsHeaders, ctx) {
                 break;
         }
 
+        // Generate cache key based on parameters and current date
+        const today = new Date().toISOString().split('T')[0];
+        const cacheKey = `${validated.country}-${validated.type}-${validated.bg}-${validated.accent}-${validated.width}x${validated.height}-${today}`;
+
+        // Build a cache request URL to use with caches.default (Cloudflare Workers)
+        // Only enable server-side caching for the non-user-specific `year` type
+        let cacheRequest = null;
+        const enableServerCache = validated.type === 'year' && (typeof caches !== 'undefined' && caches && caches.default);
+        if (enableServerCache) {
+            try {
+                const cacheUrl = new URL(request.url);
+                // Use a deterministic cache URL path and strip query/hash to avoid
+                // cache misses due to query ordering or extra params
+                cacheUrl.pathname = `/__cache__/${cacheKey}`;
+                cacheUrl.search = '';
+                cacheUrl.hash = '';
+                cacheRequest = new Request(cacheUrl.toString(), { method: 'GET' });
+                const cached = await caches.default.match(cacheRequest).catch(() => null);
+                if (cached) {
+                    try {
+                        const buf = await cached.arrayBuffer();
+                        const headers = new Headers(cached.headers);
+                        // Ensure CORS/expose headers present on cached responses
+                        Object.entries(corsHeaders).forEach(([k, v]) => headers.set(k, v));
+                        headers.set('X-Cache-Status', 'HIT');
+                        headers.set('X-Cache-Key', cacheKey);
+                        headers.set('X-Server-Cache', 'enabled');
+                        return new Response(buf, { status: cached.status, statusText: cached.statusText, headers });
+                    } catch (e) {
+                        console.error('Returning cached response failed, will regenerate:', e);
+                        // fall through to regenerate
+                    }
+                }
+            } catch (e) {
+                console.error('Cache lookup failed:', e);
+                cacheRequest = null;
+            }
+        }
+
         // Check if SVG output is requested
         if (validated.format === 'svg') {
-            return new Response(svg, {
+            const response = new Response(svg, {
                 headers: {
                     ...corsHeaders,
                     'Content-Type': 'image/svg+xml',
                     'Cache-Control': 'public, max-age=86400', // Cache for 1 day
+                    'X-Cache-Key': cacheKey,
+                    'X-Cache-Status': 'MISS'
                 }
             });
+
+            if (cacheRequest) {
+                try { await caches.default.put(cacheRequest, response.clone()); } catch (e) { console.error('Cache put failed:', e); }
+            }
+
+            return response;
         }
 
         // Convert SVG to PNG using resvg
@@ -145,18 +193,21 @@ async function handleGenerate(request, url, corsHeaders, ctx) {
         const pngData = resvg.render();
         const pngBuffer = pngData.asPng();
 
-        // Generate cache key based on parameters and current date
-        const today = new Date().toISOString().split('T')[0];
-        const cacheKey = `${validated.country}-${validated.type}-${validated.bg}-${validated.accent}-${validated.width}x${validated.height}-${today}`;
-
-        return new Response(pngBuffer, {
+        const response = new Response(pngBuffer, {
             headers: {
                 ...corsHeaders,
                 'Content-Type': 'image/png',
                 'Cache-Control': 'public, max-age=86400', // Cache for 1 day
                 'X-Cache-Key': cacheKey,
+                'X-Cache-Status': 'MISS'
             }
         });
+
+        if (cacheRequest) {
+            try { await caches.default.put(cacheRequest, response.clone()); } catch (e) { console.error('Cache put failed:', e); }
+        }
+
+        return response;
     } catch (e) {
         if (e.name === 'ZodError' || e.issues) {
             return new Response(JSON.stringify({
