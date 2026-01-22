@@ -12,6 +12,6 @@ rules = [
 ]
 
 # Uncomment to add custom domain
-# [routes]
+# [[routes]]
 # pattern = "life-calendar.yourdomain.com/*"
 # zone_name = "yourdomain.com"
