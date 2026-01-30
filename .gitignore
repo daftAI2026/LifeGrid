@@ -30,3 +30,6 @@ internal_docs/
 # AI/Process Documentation (not project code)
 AGENT.md
 IMPLEMENTATION_SUMMARY.md
+# Local Dev Config & Workflows
+.gitmessage
+.agent/

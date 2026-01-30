@@ -22,6 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Simplified Events**: Standardized event listeners to use the new state machine approach.
 
 ### Changed
+- **Git Ignore**: Updated to exclude AI documentation, project-specific workflows (`.agent/`), and local commit templates (`.gitmessage`).
 - **Bilingual README**: Updated project documentation to be bilingual (EN/ZH).
-- **Git Ignore**: Updated to exclude temporary agent logs and implementation summaries.
 - **Directory Structure**: Organized static assets and logic into `data/` and specialized loader scripts.
