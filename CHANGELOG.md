@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Refactored
+- **Cloudflare Workers Static Assets Architecture**: Migrated from separate `worker/` directory to unified deployment. Frontend assets now served from `public/`, API routes prefixed with `/api/*`. Enables single-command deployment via Cloudflare Workers Builds.
+
 ### Added
 - **Wallpaper Language Selector**: Independent language control for wallpaper text (剩余 X 天, 进度 X%, etc.), with smart sync to site language until user manually overrides.
 - **Worker i18n Module**: New `worker/src/i18n.js` for centralized wallpaper text translations across all three generators.

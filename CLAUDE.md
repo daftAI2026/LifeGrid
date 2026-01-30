@@ -12,22 +12,40 @@
 
 ```
 lifegrid/
-├── index.html          # Single-page entry, Apple design
-├── styles.css          # Dark theme + spacing scale
-├── app.js              # UI state + event binding + preview canvas
-├── data/
-│   ├── countries.js    # 65+ countries + timezones
-│   └── devices.js      # 15 device presets (iPhone 13~17 series)
-├── worker/
-│   ├── src/index.js    # CORS + request routing + WASM init
-│   ├── src/timezone.js # Timezone lookup utilities
-│   ├── src/validation.js # Zod schema validation
-│   ├── src/svg.js      # SVG generation helpers
-│   └── src/generators/
-│       ├── year.js     # 365-day grid (15 cols)
-│       ├── life.js     # Life calendar (52 cols, 80 rows)
-│       └── goal.js     # Goal countdown (circular progress)
-└── worker/wrangler.toml # Cloudflare config
+├── wrangler.toml       # Cloudflare Workers Static Assets 配置
+├── package.json        # 依赖管理
+│
+├── public/             # 静态资源目录 (Cloudflare 自动托管)
+│   ├── index.html      # Single-page entry, Apple design
+│   ├── styles.css      # Dark theme + spacing scale
+│   ├── app.js          # UI state + event binding + preview canvas
+│   ├── i18n-loader.js  # Language detection + font loading
+│   ├── favicon.svg     # Site icon
+│   └── data/
+│       ├── i18n.js     # 356 translations (en, zh-CN, zh-TW, ja)
+│       ├── countries.js # 65+ countries + timezones
+│       └── devices.js  # 15 device presets (iPhone 13~17 series)
+│
+└── src/                # Worker API 代码
+    ├── index.js        # CORS + request routing + WASM init
+    ├── timezone.js     # Timezone lookup utilities
+    ├── validation.js   # Zod schema validation
+    ├── svg.js          # SVG generation helpers
+    ├── i18n.js         # Worker-side translations
+    └── generators/
+        ├── year.js     # 365-day grid (15 cols)
+        ├── life.js     # Life calendar (52 cols, 80 rows)
+        └── goal.js     # Goal countdown (circular progress)
+```
+
+### Deployment Architecture (Cloudflare Workers Static Assets)
+```
+git push → GitHub → Cloudflare Workers Builds → Deploy
+
+路由逻辑:
+  /           → public/index.html (静态)
+  /api/*      → src/index.js (Worker)
+  其他静态资源 → public/ 目录匹配
 ```
 
 ## Design Philosophy

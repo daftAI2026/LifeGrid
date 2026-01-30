@@ -8,8 +8,6 @@ node_modules/
 
 # Cloudflare Workers
 .wrangler/
-worker/dist/
-worker/worker.js
 
 # Environment Variables
 .env

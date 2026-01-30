@@ -53,7 +53,7 @@ export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
 
-        // CORS headers
+        // CORS 头部配置
         const corsHeaders = {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -61,28 +61,55 @@ export default {
             'Access-Control-Expose-Headers': 'X-Cache-Status, X-Cache-Key, X-Server-Cache'
         };
 
-        // Handle preflight
+        // 处理预检请求 (OPTIONS)
         if (request.method === 'OPTIONS') {
             return new Response(null, { headers: corsHeaders });
         }
 
-        // Route handling
-        if (url.pathname === '/generate') {
-            return await handleGenerate(request, url, corsHeaders, ctx);
+        // ====================================================================
+        // 1. API 路由控制 (前缀 /api/)
+        // ====================================================================
+        if (url.pathname.startsWith('/api/')) {
+            // 转发到具体的 API 处理函数
+            const apiPath = url.pathname.replace('/api/', '/');
+
+            if (apiPath === '/generate') {
+                return await handleGenerate(request, url, corsHeaders, ctx);
+            }
+
+            if (apiPath === '/health') {
+                return new Response(JSON.stringify({ status: 'ok' }), {
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            return new Response('API Not Found', { status: 404, headers: corsHeaders });
         }
 
-        // 主页路由：返回 index.html 并注入 IP 国家信息
-        if (url.pathname === '/' || url.pathname === '/index.html') {
-            return await handleHomepage(request, corsHeaders);
-        }
+        // ====================================================================
+        // 2. 静态资源转发 + 首页国家信息注入
+        // ====================================================================
 
-        if (url.pathname === '/health') {
-            return new Response(JSON.stringify({ status: 'ok' }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        // 我们利用 env.ASSETS.fetch 获取原始资源
+        const response = await env.ASSETS.fetch(request);
+
+        // 如果是 HTML 请求（特别是首页），我们注入 IP 国家信息
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('text/html')) {
+            const country = request.headers.get('CF-IPCountry') || 'US';
+            let html = await response.text();
+
+            // 注入 data-country 到 html 标签
+            html = html.replace(/<html[^>]*>/, `<html lang="en" data-country="${country}">`);
+
+            return new Response(html, {
+                status: response.status,
+                headers: response.headers
             });
         }
 
-        return new Response('Not Found', { status: 404, headers: corsHeaders });
+        // 其他静态资源（CSS/JS/PNG）直接透传
+        return response;
     }
 };
 
@@ -230,67 +257,5 @@ async function handleGenerate(request, url, corsHeaders, ctx) {
     }
 }
 
-/**
- * 处理主页请求：返回 index.html 并注入 CF-IPCountry header
- * Cloudflare Workers 自动在请求中提供 CF-IPCountry header
- */
-async function handleHomepage(request, corsHeaders) {
-    try {
-        // 从请求header获取用户国家
-        const country = request.headers.get('CF-IPCountry') || 'US';
 
-        // 获取 index.html
-        // 注意：需要在Worker环境中正确处理资源
-        // 可选方案1：使用 fetch 从源服务器获取
-        // 可选方案2：打包到Worker中
-        const indexResponse = await fetch('https://lifegrid.aradhyaxstudy.workers.dev/index.html');
-
-        if (!indexResponse.ok) {
-            // 备选：返回简单的 HTML 框架
-            const html = `<!DOCTYPE html>
-<html lang="en" data-country="${country}">
-<head>
-    <meta charset="UTF-8">
-    <title>LifeGrid</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div id="app">Loading...</div>
-    <script type="module" src="i18n-loader.js"><\/script>
-    <script type="module" src="app.js"><\/script>
-</body>
-</html>`;
-
-            return new Response(html, {
-                status: 200,
-                headers: {
-                    'Content-Type': 'text/html; charset=UTF-8',
-                    ...corsHeaders
-                }
-            });
-        }
-
-        // 如果成功获取，注入 data-country 属性
-        let html = await indexResponse.text();
-        html = html.replace(
-            /<html[^>]*>/,
-            `<html lang="en" data-country="${country}">`
-        );
-
-        return new Response(html, {
-            status: 200,
-            headers: {
-                'Content-Type': 'text/html; charset=UTF-8',
-                'Cache-Control': 'public, max-age=3600',
-                ...corsHeaders
-            }
-        });
-    } catch (e) {
-        console.error('Homepage Error:', e);
-        const corsHeaders = {
-            'Access-Control-Allow-Origin': '*',
-        };
-        return new Response('Service temporarily unavailable', { status: 503, headers: corsHeaders });
-    }
-}
 
