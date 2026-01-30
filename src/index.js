@@ -67,23 +67,16 @@ export default {
         }
 
         // ====================================================================
-        // 1. API 路由控制 (前缀 /api/)
+        // 1. API 路由控制
         // ====================================================================
-        if (url.pathname.startsWith('/api/')) {
-            // 转发到具体的 API 处理函数
-            const apiPath = url.pathname.replace('/api/', '/');
+        if (url.pathname === '/generate') {
+            return await handleGenerate(request, url, corsHeaders, ctx);
+        }
 
-            if (apiPath === '/generate') {
-                return await handleGenerate(request, url, corsHeaders, ctx);
-            }
-
-            if (apiPath === '/health') {
-                return new Response(JSON.stringify({ status: 'ok' }), {
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-
-            return new Response('API Not Found', { status: 404, headers: corsHeaders });
+        if (url.pathname === '/health') {
+            return new Response(JSON.stringify({ status: 'ok' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
         }
 
         // ====================================================================

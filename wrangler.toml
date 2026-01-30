@@ -21,7 +21,7 @@ account_id = "02c398482d28151eb2aafa68818815ce"
 directory = "./public"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
-run_worker_first = ["/api/*"]
+run_worker_first = ["/generate", "/health"]
 
 # ============================================================================
 #                            构建配置

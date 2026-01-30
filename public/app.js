@@ -10,7 +10,7 @@ import { devices, getDevice } from './data/devices.js';
 import { i18nData, countryToLang, DEFAULT_LANG, SUPPORTED_LANGS } from './data/i18n.js';
 
 // ===== Configuration =====
-const WORKER_URL = '/api';
+const WORKER_URL = 'https://lifegrid.flydogcn.workers.dev';
 
 // ===== i18n Helper =====
 function i18n(key) {
