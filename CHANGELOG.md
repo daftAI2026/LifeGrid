@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Google Fonts Integration**: Dynamic loading of CJK fonts (Noto Sans SC/TC/JP) for optimal typography.
 
 ### Fixed
+- **Uniform Typography**: Standardized font size and weight for progress stats across preview canvas and worker generators.
+- **Goal Preview Visibility**: Fixed goal countdown text color in Light Mode to ensure visibility against the dark preview background.
 - **Device Notch Color**: Fixed Dynamic Island/Notch to always be black (hardware color), regardless of theme.
 - **Preview Fill**: Changed Canvas `object-fit` from `contain` to `cover` to eliminate white gaps in device preview.
 

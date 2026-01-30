@@ -500,7 +500,7 @@ function updatePreview() {
 // ===== 网格统计文本渲染器 (TODO-2 重构: 提取公共逻辑) =====
 function drawStats(ctx, width, y, text1, text2, fontScale = 1) {
     const font1 = `500 ${width * 0.032 * fontScale}px Inter, sans-serif`;
-    const font2 = `500 ${width * 0.026 * fontScale}px "SF Mono", "Menlo", "Courier New", monospace`;
+    const font2 = `500 ${width * 0.032 * fontScale}px "SF Mono", "Menlo", "Courier New", monospace`;
 
     ctx.font = font1;
     const w1 = ctx.measureText(text1).width;

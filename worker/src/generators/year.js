@@ -89,7 +89,7 @@ export function generateYearCalendar(options) {
     const daysText = daysRemaining === 1 ? t('dayLeft', daysRemaining, lang) : t('daysLeft', daysRemaining, lang);
     const completeText = t('complete', progressPercent, lang);
     const statsContent = `<tspan fill="${parseColor(accentColor)}" font-family="Inter" font-weight="500">${daysText}</tspan>` +
-        `<tspan fill="rgba(255,255,255,0.5)" font-family="'SF Mono', 'Menlo', 'Courier New', monospace" font-weight="400"> · ${completeText}</tspan>`;
+        `<tspan fill="rgba(255,255,255,0.5)" font-family="Inter" font-weight="500"> · ${completeText}</tspan>`;
 
     content += text(width / 2, statsY, statsContent, {
         fontSize: width * 0.032,

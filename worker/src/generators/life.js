@@ -103,7 +103,7 @@ export function generateLifeCalendar(options) {
     const weeksText = weeksRemaining === 1 ? t('weekLeft', weeksRemaining, lang) : t('weeksLeft', weeksRemaining, lang);
     const livedText = t('lived', progressPercent, lang);
     const statsContent = `<tspan fill="${parseColor(accentColor)}" font-family="Inter" font-weight="500">${weeksText}</tspan>` +
-        `<tspan fill="rgba(255,255,255,0.5)" font-family="'SF Mono', 'Menlo', 'Courier New', monospace" font-weight="400"> · ${livedText}</tspan>`;
+        `<tspan fill="rgba(255,255,255,0.5)" font-family="Inter" font-weight="500"> · ${livedText}</tspan>`;
 
     content += text(width / 2, statsY, statsContent, {
         fontSize: width * 0.022,
