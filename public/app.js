@@ -48,6 +48,7 @@ const state = {
     timezone: null,
     bgColor: '#000000',
     accentColor: '#FFFFFF',
+    originalAccentColor: '#FFFFFF',  // 用户原始选择的强调色
     width: 1179,
     height: 2556,
     clockHeight: 0.18,  // Space for iPhone clock/date
@@ -56,16 +57,32 @@ const state = {
     goalName: i18n('config.goalName'),
     goalDate: null,
     selectedDevice: null,
-    deviceState: DeviceState.INITIALIZING,  // 设备选择状态机
-    wallpaperLang: null,          // 壁纸语言（初始跟随网站语言）
-    wallpaperLangLocked: false    // 用户手动选择后锁定
+    deviceState: DeviceState.INITIALIZING,
+    wallpaperLang: null,
+    wallpaperLangLocked: false
 };
 
-// ===== 统一状态更新入口 (TODO-3 重构) =====
+// ===== 统一状态更新入口 =====
 function setState(updates, options = {}) {
     Object.assign(state, updates);
     if (!options.silent) {
+        // 检查颜色撞车并同步选择器
+        syncAccentColorPicker();
         render();
+    }
+}
+
+// ===== 强调色选择器同步逻辑 =====
+function syncAccentColorPicker() {
+    const safeAccent = getSafeAccent(state.bgColor, state.originalAccentColor);
+    state.accentColor = safeAccent;
+
+    // 同步 UI
+    if (elements.accentColor) {
+        elements.accentColor.value = safeAccent;
+    }
+    if (elements.accentHex) {
+        elements.accentHex.textContent = safeAccent.toUpperCase();
     }
 }
 
@@ -83,7 +100,7 @@ const elements = {
     typeCards: $$('.type-card'),
     selectedTypeIndicator: $('#selected-type .indicator-value'),
     countrySelect: $('#country-select'),
-    wallpaperLangSelect: $('#wallpaper-lang-select'),  // 壁纸语言选择器
+    wallpaperLangSelect: $('#wallpaper-lang-select'),
     deviceSelect: $('#device-select'),
     deviceResolution: $('#device-resolution'),
     bgColor: $('#bg-color'),
@@ -334,9 +351,12 @@ function bindEvents() {
         setState({ bgColor: e.target.value });
     });
 
+    // 强调色选择器：更新 originalAccentColor
     elements.accentColor.addEventListener('input', (e) => {
-        elements.accentHex.textContent = e.target.value.toUpperCase();
-        setState({ accentColor: e.target.value });
+        const newAccent = e.target.value;
+        state.originalAccentColor = newAccent;  // 保存用户原始选择
+        elements.accentHex.textContent = newAccent.toUpperCase();
+        setState({ accentColor: newAccent });
     });
 
     // Make color wrappers clickable
@@ -359,6 +379,8 @@ function bindEvents() {
             elements.accentColor.value = accent;
             elements.accentHex.textContent = accent.toUpperCase();
 
+            // 同时更新 originalAccentColor
+            state.originalAccentColor = accent;
             setState({ bgColor: bg, accentColor: accent });
         });
     });
@@ -497,7 +519,7 @@ function updatePreview() {
     elements.previewScreen.appendChild(canvas);
 }
 
-// ===== 网格统计文本渲染器 (TODO-2 重构: 提取公共逻辑) =====
+// ===== 网格统计文本渲染器 =====
 function drawStats(ctx, width, y, text1, text2, fontScale = 1) {
     const font1 = `500 ${width * 0.032 * fontScale}px Inter, sans-serif`;
     const font2 = `500 ${width * 0.032 * fontScale}px "SF Mono", "Menlo", "Courier New", monospace`;
@@ -510,14 +532,14 @@ function drawStats(ctx, width, y, text1, text2, fontScale = 1) {
     const totalW = w1 + w2;
     const x = (width - totalW) / 2;
 
-    // Part 1: Accent 色
-    ctx.fillStyle = state.accentColor;
+    // Part 1: 安全强调色
+    ctx.fillStyle = getSafeAccent(state.bgColor, state.accentColor);
     ctx.font = font1;
     ctx.textAlign = 'left';
     ctx.fillText(text1, x, y);
 
-    // Part 2: Grey
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    // Part 2: 动态对比色
+    ctx.fillStyle = contrastAlpha(state.bgColor, 0.5);
     ctx.font = font2;
     ctx.fillText(text2, x + w1, y);
 }
@@ -566,18 +588,22 @@ function drawYearPreview(ctx, width, height) {
         const isCompleted = i < dayOfYear;
         const isToday = i === dayOfYear - 1;
 
+        // 安全强调色：仅在与背景撞车时反转
+        const safeAccent = getSafeAccent(state.bgColor, state.accentColor);
+
         if (isToday) {
-            ctx.fillStyle = state.accentColor;
+            ctx.fillStyle = safeAccent;
             ctx.beginPath();
             ctx.arc(cx, cy, dotRadius * 1.2, 0, Math.PI * 2);
             ctx.fill();
         } else if (isCompleted) {
-            ctx.fillStyle = hexToRgba(state.accentColor, 0.75);
+            ctx.fillStyle = hexToRgba(safeAccent, 0.75);
             ctx.beginPath();
             ctx.arc(cx, cy, dotRadius, 0, Math.PI * 2);
             ctx.fill();
         } else {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+            // 背景圆点：根据背景亮度自动选择对比色
+            ctx.fillStyle = contrastAlpha(state.bgColor, 0.12);
             ctx.beginPath();
             ctx.arc(cx, cy, dotRadius, 0, Math.PI * 2);
             ctx.fill();
@@ -639,12 +665,16 @@ function drawLifePreview(ctx, width, height) {
         const isLived = i < weeksLived;
         const isCurrentWeek = i === weeksLived;
 
+        // 安全强调色：仅在与背景撞车时反转
+        const safeAccent = getSafeAccent(state.bgColor, state.accentColor);
+
         if (isCurrentWeek) {
-            ctx.fillStyle = state.accentColor;
+            ctx.fillStyle = safeAccent;
         } else if (isLived) {
-            ctx.fillStyle = hexToRgba(state.accentColor, 0.75);
+            ctx.fillStyle = hexToRgba(safeAccent, 0.75);
         } else {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+            // 背景圆点：根据背景亮度自动选择对比色
+            ctx.fillStyle = contrastAlpha(state.bgColor, 0.06);
         }
 
         ctx.beginPath();
@@ -680,8 +710,10 @@ function drawGoalPreview(ctx, width, height) {
         progress = Math.min(1, 1 - (daysRemaining / 365));
     }
 
-    // Background circle
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    const safeAccent = getSafeAccent(state.bgColor, state.accentColor);
+
+    // Background circle - 使用动态对比色
+    ctx.strokeStyle = contrastAlpha(state.bgColor, 0.1);
     ctx.lineWidth = 6;
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -689,7 +721,7 @@ function drawGoalPreview(ctx, width, height) {
 
     // Progress arc
     if (progress > 0) {
-        ctx.strokeStyle = state.accentColor;
+        ctx.strokeStyle = safeAccent;
         ctx.lineWidth = 6;
         ctx.lineCap = 'round';
         ctx.beginPath();
@@ -697,23 +729,23 @@ function drawGoalPreview(ctx, width, height) {
         ctx.stroke();
     }
 
-    // Days number
-    ctx.fillStyle = state.accentColor;
+    // Days number - 使用安全强调色
+    ctx.fillStyle = safeAccent;
     ctx.font = `bold ${width * 0.14}px Inter, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(daysRemaining.toString(), centerX, centerY - 4);
 
-    // Label
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    // Label - 使用动态对比色
+    ctx.fillStyle = contrastAlpha(state.bgColor, 0.5);
     ctx.font = `${width * 0.03}px Inter, sans-serif`;
     const daysLeftText = getWallpaperText(daysRemaining === 1 ? 'wallpaper.dayLeft' : 'wallpaper.daysLeft', daysRemaining);
     ctx.fillText(daysLeftText, centerX, centerY + (height * 0.08));
 
 
-    // Goal name
+    // Goal name - 使用动态对比色
     if (state.goalName) {
-        ctx.fillStyle = state.accentColor;
+        ctx.fillStyle = contrastAlpha(state.bgColor, 0.9);
         ctx.font = `600 ${width * 0.035}px Inter, sans-serif`;
         ctx.fillText(state.goalName, centerX, height * 0.75);
     }
@@ -730,6 +762,85 @@ function hexToRgba(hex, alpha) {
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// ============================================================================
+// 颜色对比度自适应工具
+// ============================================================================
+
+/**
+ * 计算相对亮度 (ITU-R BT.709 / WCAG 2.0)
+ * @param {string} hex - 十六进制颜色值
+ * @returns {number} 0-1 范围的亮度值
+ */
+function getLuminance(hex) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+    }
+
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+    const toLinear = (c) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+}
+
+/**
+ * 获取对比基底色 RGB 字符串
+ * @param {string} bgHex - 背景色
+ * @returns {string} '255,255,255' 或 '0,0,0'
+ */
+function getContrastBase(bgHex) {
+    return getLuminance(bgHex) > 0.5 ? '0,0,0' : '255,255,255';
+}
+
+/**
+ * 生成与背景形成对比的半透明色
+ * @param {string} bgHex - 背景色
+ * @param {number} alpha - 透明度
+ * @returns {string} rgba 颜色值
+ */
+function contrastAlpha(bgHex, alpha) {
+    return `rgba(${getContrastBase(bgHex)}, ${alpha})`;
+}
+
+/**
+ * 检测两个颜色是否太接近（对比度 < 2:1）
+ * @param {string} hex1 - 颜色1
+ * @param {string} hex2 - 颜色2
+ * @returns {boolean} 是否撞车
+ */
+function isTooClose(hex1, hex2) {
+    const l1 = getLuminance(hex1);
+    const l2 = getLuminance(hex2);
+    const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    return ratio < 2;
+}
+
+/**
+ * 检测颜色是否接近纯黑或纯白
+ * @param {string} hex - 颜色值
+ * @returns {boolean} 是否是黑白色
+ */
+function isBlackOrWhite(hex) {
+    const luminance = getLuminance(hex);
+    return luminance < 0.1 || luminance > 0.9;
+}
+
+/**
+ * 获取安全的强调色（仅当黑白色与背景撞车时反转）
+ * @param {string} bgHex - 背景色
+ * @param {string} accentHex - 用户选择的强调色
+ * @returns {string} 安全的强调色
+ */
+function getSafeAccent(bgHex, accentHex) {
+    // 只处理黑白色的情况
+    if (isBlackOrWhite(accentHex) && isTooClose(bgHex, accentHex)) {
+        return getLuminance(bgHex) > 0.5 ? '#000000' : '#FFFFFF';
+    }
+    return accentHex;
 }
 
 // ===== URL Builder =====

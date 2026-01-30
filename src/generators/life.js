@@ -1,4 +1,4 @@
-import { createSVG, rect, circle, text, parseColor, colorWithAlpha } from '../svg.js';
+import { createSVG, rect, circle, text, parseColor, colorWithAlpha, contrastAlpha, getSafeAccent } from '../svg.js';
 import { getDateInTimezone, getWeeksBetween } from '../timezone.js';
 import { t } from '../i18n.js';
 
@@ -80,16 +80,19 @@ export function generateLifeCalendar(options) {
         const isLived = i < weeksLived;
         const isCurrentWeek = i === weeksLived;
 
+        // 安全强调色：仅在与背景撞车时反转
+        const safeAccent = getSafeAccent(bgColor, accentColor);
         let fillColor;
         let radius = dotRadius;
 
         if (isCurrentWeek) {
-            fillColor = parseColor(accentColor);
+            fillColor = parseColor(safeAccent);
             radius = dotRadius * 1.15;
         } else if (isLived) {
-            fillColor = colorWithAlpha(parseColor(accentColor), 0.75);
+            fillColor = colorWithAlpha(parseColor(safeAccent), 0.75);
         } else {
-            fillColor = colorWithAlpha('#ffffff', 0.06);
+            // 背景圆点：根据背景亮度自动选择对比色
+            fillColor = contrastAlpha(bgColor, 0.06);
         }
 
         content += circle(cx, cy, radius, fillColor);
@@ -100,10 +103,12 @@ export function generateLifeCalendar(options) {
     const weeksRemaining = totalWeeks - weeksLived;
     const statsY = startY + gridHeight + (height * 0.025);
 
+    const safeAccent = getSafeAccent(bgColor, accentColor);
     const weeksText = weeksRemaining === 1 ? t('weekLeft', weeksRemaining, lang) : t('weeksLeft', weeksRemaining, lang);
     const livedText = t('lived', progressPercent, lang);
-    const statsContent = `<tspan fill="${parseColor(accentColor)}" font-family="Inter" font-weight="500">${weeksText}</tspan>` +
-        `<tspan fill="rgba(255,255,255,0.5)" font-family="Inter" font-weight="500"> · ${livedText}</tspan>`;
+    // 进度文字：使用动态对比色
+    const statsContent = `<tspan fill="${parseColor(safeAccent)}" font-family="Inter" font-weight="500">${weeksText}</tspan>` +
+        `<tspan fill="${contrastAlpha(bgColor, 0.5)}" font-family="Inter" font-weight="500"> · ${livedText}</tspan>`;
 
     content += text(width / 2, statsY, statsContent, {
         fontSize: width * 0.022,

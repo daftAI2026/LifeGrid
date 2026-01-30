@@ -1,4 +1,4 @@
-import { createSVG, rect, circle, text, parseColor, colorWithAlpha } from '../svg.js';
+import { createSVG, rect, circle, text, parseColor, colorWithAlpha, contrastAlpha, getSafeAccent } from '../svg.js';
 import { getDateInTimezone, getDayOfYear, getWeekOfYear, getDaysInYear } from '../timezone.js';
 import { t } from '../i18n.js';
 
@@ -66,16 +66,19 @@ export function generateYearCalendar(options) {
         const isCompleted = i < dayOfYear;
         const isToday = i === dayOfYear - 1;
 
+        // 安全强调色：仅在与背景撞车时反转
+        const safeAccent = getSafeAccent(bgColor, accentColor);
         let fillColor;
         let radius = dotRadius;
 
         if (isToday) {
-            fillColor = parseColor(accentColor);
+            fillColor = parseColor(safeAccent);
             radius = dotRadius * 1.12;  // Only 12% bigger
         } else if (isCompleted) {
-            fillColor = colorWithAlpha(parseColor(accentColor), 0.75);
+            fillColor = colorWithAlpha(parseColor(safeAccent), 0.75);
         } else {
-            fillColor = colorWithAlpha('#ffffff', 0.12);
+            // 背景圆点：根据背景亮度自动选择对比色
+            fillColor = contrastAlpha(bgColor, 0.12);
         }
 
         content += circle(cx, cy, radius, fillColor);
@@ -86,10 +89,12 @@ export function generateYearCalendar(options) {
     const progressPercent = Math.round((dayOfYear / totalDays) * 100);
     const statsY = startY + gridHeight + (height * 0.025);
 
+    const safeAccent = getSafeAccent(bgColor, accentColor);
     const daysText = daysRemaining === 1 ? t('dayLeft', daysRemaining, lang) : t('daysLeft', daysRemaining, lang);
     const completeText = t('complete', progressPercent, lang);
-    const statsContent = `<tspan fill="${parseColor(accentColor)}" font-family="Inter" font-weight="500">${daysText}</tspan>` +
-        `<tspan fill="rgba(255,255,255,0.5)" font-family="Inter" font-weight="500"> · ${completeText}</tspan>`;
+    // 进度文字：使用动态对比色
+    const statsContent = `<tspan fill="${parseColor(safeAccent)}" font-family="Inter" font-weight="500">${daysText}</tspan>` +
+        `<tspan fill="${contrastAlpha(bgColor, 0.5)}" font-family="Inter" font-weight="500"> · ${completeText}</tspan>`;
 
     content += text(width / 2, statsY, statsContent, {
         fontSize: width * 0.032,

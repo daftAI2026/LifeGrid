@@ -1,4 +1,4 @@
-import { createSVG, rect, circle, text, arc, parseColor, colorWithAlpha } from '../svg.js';
+import { createSVG, rect, circle, text, arc, parseColor, colorWithAlpha, contrastAlpha, getSafeAccent } from '../svg.js';
 import { getDateInTimezone, getDaysBetween } from '../timezone.js';
 import { t } from '../i18n.js';
 
@@ -57,53 +57,54 @@ export function generateGoalCountdown(options) {
     // Circular progress
     const radius = width * 0.28;
     const strokeWidth = width * 0.035;
+    const safeAccent = getSafeAccent(bgColor, accentColor);
 
-    // Background circle
-    content += `<circle cx="${centerX}" cy="${centerY}" r="${radius}" stroke="${colorWithAlpha('#ffffff', 0.1)}" stroke-width="${strokeWidth}" fill="none" />`;
+    // Background circle - 使用动态对比色
+    content += `<circle cx="${centerX}" cy="${centerY}" r="${radius}" stroke="${contrastAlpha(bgColor, 0.1)}" stroke-width="${strokeWidth}" fill="none" />`;
 
     // Progress arc
     if (progress > 0) {
         const endAngle = progress * 360;
-        content += arc(centerX, centerY, radius, 0, endAngle, parseColor(accentColor), strokeWidth);
+        content += arc(centerX, centerY, radius, 0, endAngle, parseColor(safeAccent), strokeWidth);
     }
 
-    // Days number
+    // Days number - 使用安全强调色
     content += text(centerX, centerY - height * 0.015, daysRemaining.toString(), {
-        fill: parseColor(accentColor),
+        fill: parseColor(safeAccent),
         fontSize: width * 0.2,
         fontWeight: '700',
         textAnchor: 'middle',
         dominantBaseline: 'middle'
     });
 
-    // "days left" label
+    // "days left" label - 使用动态对比色
     const daysLeftText = daysRemaining === 1 ? t('dayLeft', daysRemaining, lang) : t('daysLeft', daysRemaining, lang);
     content += text(centerX, centerY + height * 0.08, daysLeftText, {
-        fill: colorWithAlpha('#ffffff', 0.5),
+        fill: contrastAlpha(bgColor, 0.5),
         fontSize: width * 0.04,
         fontWeight: '400',
         textAnchor: 'middle',
         dominantBaseline: 'middle'
     });
 
-    // Goal name
+    // Goal name - 使用动态对比色
     const decodedGoalName = decodeURIComponent(goalName);
     content += text(centerX, height * 0.75, decodedGoalName, {
-        fill: '#ffffff',
+        fill: contrastAlpha(bgColor, 0.9),
         fontSize: width * 0.05,
         fontWeight: '600',
         textAnchor: 'middle',
         dominantBaseline: 'middle'
     });
 
-    // Target date
+    // Target date - 使用动态对比色
     const dateStr = targetDate.toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
         year: 'numeric'
     });
     content += text(centerX, height * 0.77, dateStr, {
-        fill: colorWithAlpha('#ffffff', 0.4),
+        fill: contrastAlpha(bgColor, 0.4),
         fontSize: width * 0.028,
         fontWeight: '400',
         textAnchor: 'middle',

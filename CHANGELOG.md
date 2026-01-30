@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Color Contrast Intelligence**: The accent color picker now automatically reflects and hints at contrast adjustments, ensuring a "what you see is what you get" experience.
+- **Private Task Management**: Introduced local-only `TODO.md` (git-ignored) for focused internal development tracking.
+
 ### Refactored
 - **Cloudflare Workers Static Assets Architecture**: Migrated from separate `worker/` directory to unified deployment. Frontend assets now served from `public/`, API routes prefixed with `/api/*`. Enables single-command deployment via Cloudflare Workers Builds.
+
 
 ### Added
 - **Wallpaper Language Selector**: Independent language control for wallpaper text (剩余 X 天, 进度 X%, etc.), with smart sync to site language until user manually overrides.

@@ -135,3 +135,82 @@ export function colorWithAlpha(hex, alpha) {
     const b = parseInt(hex.substring(4, 6), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
+
+// ============================================================================
+// 颜色对比度自适应工具
+// ============================================================================
+
+/**
+ * 计算相对亮度 (ITU-R BT.709 / WCAG 2.0)
+ * @param {string} hex - 十六进制颜色值
+ * @returns {number} 0-1 范围的亮度值
+ */
+export function getLuminance(hex) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+    }
+
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+    const toLinear = (c) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+}
+
+/**
+ * 获取对比基底色 RGB 字符串
+ * @param {string} bgHex - 背景色
+ * @returns {string} '255,255,255' 或 '0,0,0'
+ */
+export function getContrastBase(bgHex) {
+    return getLuminance(bgHex) > 0.5 ? '0,0,0' : '255,255,255';
+}
+
+/**
+ * 生成与背景形成对比的半透明色
+ * @param {string} bgHex - 背景色
+ * @param {number} alpha - 透明度
+ * @returns {string} rgba 颜色值
+ */
+export function contrastAlpha(bgHex, alpha) {
+    return `rgba(${getContrastBase(bgHex)}, ${alpha})`;
+}
+
+/**
+ * 检测两个颜色是否太接近（对比度 < 2:1）
+ * @param {string} hex1 - 颜色1
+ * @param {string} hex2 - 颜色2
+ * @returns {boolean} 是否撞车
+ */
+export function isTooClose(hex1, hex2) {
+    const l1 = getLuminance(hex1);
+    const l2 = getLuminance(hex2);
+    const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    return ratio < 2;
+}
+
+/**
+ * 检测颜色是否接近纯黑或纯白
+ * @param {string} hex - 颜色值
+ * @returns {boolean} 是否是黑白色
+ */
+export function isBlackOrWhite(hex) {
+    const luminance = getLuminance(hex);
+    return luminance < 0.1 || luminance > 0.9;
+}
+
+/**
+ * 获取安全的强调色（仅当黑白色与背景撞车时反转）
+ * @param {string} bgHex - 背景色
+ * @param {string} accentHex - 用户选择的强调色
+ * @returns {string} 安全的强调色
+ */
+export function getSafeAccent(bgHex, accentHex) {
+    // 只处理黑白色的情况
+    if (isBlackOrWhite(accentHex) && isTooClose(bgHex, accentHex)) {
+        return getLuminance(bgHex) > 0.5 ? '#000000' : '#FFFFFF';
+    }
+    return accentHex;
+}
