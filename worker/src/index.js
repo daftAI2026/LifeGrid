@@ -67,8 +67,13 @@ export default {
         }
 
         // Route handling
-        if (url.pathname === '/generate' || url.pathname === '/') {
+        if (url.pathname === '/generate') {
             return await handleGenerate(request, url, corsHeaders, ctx);
+        }
+
+        // 主页路由：返回 index.html 并注入 IP 国家信息
+        if (url.pathname === '/' || url.pathname === '/index.html') {
+            return await handleHomepage(request, corsHeaders);
         }
 
         if (url.pathname === '/health') {
@@ -221,6 +226,70 @@ async function handleGenerate(request, url, corsHeaders, ctx) {
 
         console.error('Worker Error:', e);
         return new Response('Internal Server Error', { status: 500, headers: corsHeaders });
+    }
+}
+
+/**
+ * 处理主页请求：返回 index.html 并注入 CF-IPCountry header
+ * Cloudflare Workers 自动在请求中提供 CF-IPCountry header
+ */
+async function handleHomepage(request, corsHeaders) {
+    try {
+        // 从请求header获取用户国家
+        const country = request.headers.get('CF-IPCountry') || 'US';
+
+        // 获取 index.html
+        // 注意：需要在Worker环境中正确处理资源
+        // 可选方案1：使用 fetch 从源服务器获取
+        // 可选方案2：打包到Worker中
+        const indexResponse = await fetch('https://lifegrid.aradhyaxstudy.workers.dev/index.html');
+        
+        if (!indexResponse.ok) {
+            // 备选：返回简单的 HTML 框架
+            const html = `<!DOCTYPE html>
+<html lang="en" data-country="${country}">
+<head>
+    <meta charset="UTF-8">
+    <title>LifeGrid</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">Loading...</div>
+    <script type="module" src="i18n-loader.js"><\/script>
+    <script type="module" src="app.js"><\/script>
+</body>
+</html>`;
+            
+            return new Response(html, {
+                status: 200,
+                headers: {
+                    'Content-Type': 'text/html; charset=UTF-8',
+                    ...corsHeaders
+                }
+            });
+        }
+
+        // 如果成功获取，注入 data-country 属性
+        let html = await indexResponse.text();
+        html = html.replace(
+            /<html[^>]*>/,
+            `<html lang="en" data-country="${country}">`
+        );
+
+        return new Response(html, {
+            status: 200,
+            headers: {
+                'Content-Type': 'text/html; charset=UTF-8',
+                'Cache-Control': 'public, max-age=3600',
+                ...corsHeaders
+            }
+        });
+    } catch (e) {
+        console.error('Homepage Error:', e);
+        const corsHeaders = {
+            'Access-Control-Allow-Origin': '*',
+        };
+        return new Response('Service temporarily unavailable', { status: 503, headers: corsHeaders });
     }
 }
 
