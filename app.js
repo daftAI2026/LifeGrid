@@ -26,6 +26,21 @@ function i18n(key) {
     return i18nData[lang][key];
 }
 
+// ===== 壁纸文字国际化 Helper =====
+function getWallpaperText(key, value) {
+    // 使用 state.wallpaperLang，支持 {n} 占位符
+    const lang = state.wallpaperLang || DEFAULT_LANG;
+    const text = i18nData[lang]?.[key] || i18nData[DEFAULT_LANG]?.[key] || key;
+    return text.replace('{n}', value);
+}
+
+// ===== Device State Machine (TODO-4 实现) =====
+const DeviceState = Object.freeze({
+    INITIALIZING: 'initializing',  // 正在探测默认设备
+    SELECTED: 'selected',          // 已成功选中设备
+    FALLBACK: 'fallback'           // 降级到默认设备
+});
+
 // ===== State =====
 const state = {
     selectedType: null,
@@ -40,7 +55,10 @@ const state = {
     lifespan: 80,
     goalName: i18n('config.goalName'),
     goalDate: null,
-    selectedDevice: null
+    selectedDevice: null,
+    deviceState: DeviceState.INITIALIZING,  // 设备选择状态机
+    wallpaperLang: null,          // 壁纸语言（初始跟随网站语言）
+    wallpaperLangLocked: false    // 用户手动选择后锁定
 };
 
 // ===== 统一状态更新入口 (TODO-3 重构) =====
@@ -65,6 +83,7 @@ const elements = {
     typeCards: $$('.type-card'),
     selectedTypeIndicator: $('#selected-type .indicator-value'),
     countrySelect: $('#country-select'),
+    wallpaperLangSelect: $('#wallpaper-lang-select'),  // 壁纸语言选择器
     deviceSelect: $('#device-select'),
     deviceResolution: $('#device-resolution'),
     bgColor: $('#bg-color'),
@@ -96,6 +115,24 @@ function init() {
     autoDetectCountry();
     // Default to iOS
     switchSetupPlatform('ios');
+
+    // 初始化壁纸语言：跟随网站语言
+    const initialLang = window.i18n?.getCurrentLang() || 'en';
+    state.wallpaperLang = initialLang;
+    if (elements.wallpaperLangSelect) {
+        elements.wallpaperLangSelect.value = initialLang;
+    }
+
+    // 监听网站语言变化：未锁定时跟随
+    window.addEventListener('i18n-changed', (e) => {
+        if (!state.wallpaperLangLocked) {
+            state.wallpaperLang = e.detail.lang;
+            if (elements.wallpaperLangSelect) {
+                elements.wallpaperLangSelect.value = e.detail.lang;
+            }
+            render();
+        }
+    });
 }
 
 // ===== Populate Countries =====
@@ -113,7 +150,7 @@ function getFlagEmoji(code) {
     return String.fromCodePoint(...codePoints);
 }
 
-// ===== Populate Devices =====
+// ===== Populate Devices (TODO-4: 状态机驱动) =====
 function populateDevices() {
     // Group devices by category
     const categories = {};
@@ -142,10 +179,59 @@ function populateDevices() {
         elements.deviceSelect.appendChild(optgroup);
     });
 
-    // Set default (iPhone 16 Pro)
-    const defaultDevice = devices.find(d => d.name === 'iPhone 16 Pro') || devices[0];
-    elements.deviceSelect.value = defaultDevice.name;
-    selectDevice(defaultDevice.name);
+    // 状态机驱动的设备初始化
+    initializeDevice();
+}
+
+/**
+ * 设备初始化状态机入口 (TODO-4)
+ * 状态转换: INITIALIZING → SELECTED | FALLBACK
+ */
+function initializeDevice() {
+    const PREFERRED_DEVICE = 'iPhone 16 Pro';
+    const preferredDevice = devices.find(d => d.name === PREFERRED_DEVICE);
+
+    if (preferredDevice) {
+        // 首选设备存在 → SELECTED
+        transitionDeviceState(DeviceState.SELECTED, preferredDevice);
+    } else if (devices.length > 0) {
+        // 首选不存在但有其他设备 → FALLBACK
+        console.warn(`[DeviceStateMachine] "${PREFERRED_DEVICE}" not found, falling back to "${devices[0].name}"`);
+        transitionDeviceState(DeviceState.FALLBACK, devices[0]);
+    } else {
+        // 无设备可用（极端情况）
+        console.error('[DeviceStateMachine] No devices available!');
+        state.deviceState = DeviceState.FALLBACK;
+    }
+}
+
+/**
+ * 设备状态转换器 (TODO-4)
+ * 统一的状态转换逻辑，确保所有变更可追溯
+ */
+function transitionDeviceState(newState, device) {
+    const prevState = state.deviceState;
+    state.deviceState = newState;
+
+    if (device) {
+        state.selectedDevice = device;
+        state.width = device.width;
+        state.height = device.height;
+        state.clockHeight = device.clockHeight || 0.18;
+
+        elements.deviceSelect.value = device.name;
+        elements.deviceResolution.textContent = `${device.width} × ${device.height}`;
+    }
+
+    // 状态转换日志（开发调试用）
+    if (prevState !== newState) {
+        console.log(`[DeviceStateMachine] ${prevState} → ${newState}${device ? ` (${device.name})` : ''}`);
+    }
+
+    // 仅在非初始化阶段触发渲染（初始化时由 init() 统一调度）
+    if (prevState !== DeviceState.INITIALIZING) {
+        render();
+    }
 }
 
 // ===== Card Previews =====
@@ -235,6 +321,13 @@ function bindEvents() {
         selectDevice(e.target.value);
     });
 
+    // Wallpaper Language Select (壁纸语言选择器)
+    elements.wallpaperLangSelect?.addEventListener('change', (e) => {
+        state.wallpaperLang = e.target.value;
+        state.wallpaperLangLocked = true;  // 手动选择后锁定，不再跟随网站语言
+        render();
+    });
+
     // Color Pickers
     elements.bgColor.addEventListener('input', (e) => {
         elements.bgHex.textContent = e.target.value.toUpperCase();
@@ -320,20 +413,21 @@ function switchSetupPlatform(platform) {
     });
 }
 
-// ===== Device Selection =====
+// ===== Device Selection (TODO-4: 状态机驱动) =====
 function selectDevice(deviceName) {
     const device = devices.find(d => d.name === deviceName);
-    if (!device) return;
 
-    state.selectedDevice = device;
-    state.width = device.width;
-    state.height = device.height;
-    state.clockHeight = device.clockHeight || 0.18;
+    if (!device) {
+        // 找不到设备 → 尝试降级
+        console.warn(`[DeviceStateMachine] Device "${deviceName}" not found, attempting fallback`);
+        if (devices.length > 0 && state.selectedDevice?.name !== devices[0].name) {
+            transitionDeviceState(DeviceState.FALLBACK, devices[0]);
+        }
+        return;
+    }
 
-    // Update resolution hint
-    elements.deviceResolution.textContent = `${device.width} × ${device.height}`;
-
-    render();
+    // 用户手动选择 → 始终进入 SELECTED 状态
+    transitionDeviceState(DeviceState.SELECTED, device);
 }
 
 // ===== Type Selection =====
@@ -379,7 +473,7 @@ function updatePreview() {
     canvas.height = state.height * scale;
     canvas.style.width = '100%';
     canvas.style.height = '100%';
-    canvas.style.objectFit = 'contain';
+    canvas.style.objectFit = 'cover';  // cover 确保完全覆盖，无留白
     canvas.style.borderRadius = '24px';
 
 
@@ -495,7 +589,9 @@ function drawYearPreview(ctx, width, height) {
     const percent = Math.round((dayOfYear / totalDays) * 100);
     const statsY = startY + gridHeight + (height * 0.03);
 
-    drawStats(ctx, width, statsY, `${daysLeft} days left`, ` · ${percent}% complete`);
+    const daysText = getWallpaperText(daysLeft === 1 ? 'wallpaper.dayLeft' : 'wallpaper.daysLeft', daysLeft);
+    const completeText = getWallpaperText('wallpaper.complete', percent);
+    drawStats(ctx, width, statsY, daysText, ` · ${completeText}`);
 }
 
 function drawLifePreview(ctx, width, height) {
@@ -561,8 +657,10 @@ function drawLifePreview(ctx, width, height) {
     const percent = Math.round((weeksLived / totalWeeks) * 100);
     const statsY = startY + gridHeight + (height * 0.035);
 
+    const weeksText = getWallpaperText(weeksLeft === 1 ? 'wallpaper.weekLeft' : 'wallpaper.weeksLeft', weeksLeft.toLocaleString());
+    const livedText = getWallpaperText('wallpaper.lived', percent);
     // fontScale 0.8 适配 52 列更密集的网格
-    drawStats(ctx, width, statsY, `${weeksLeft.toLocaleString()} weeks left`, ` · ${percent}% lived`, 0.8);
+    drawStats(ctx, width, statsY, weeksText, ` · ${livedText}`, 0.8);
 }
 
 function drawGoalPreview(ctx, width, height) {
@@ -609,7 +707,7 @@ function drawGoalPreview(ctx, width, height) {
     // Label
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.font = `${width * 0.03}px Inter, sans-serif`;
-    const daysLeftText = daysRemaining === 1 ? i18n('goal.dayLeft') : i18n('goal.daysLeft');
+    const daysLeftText = getWallpaperText(daysRemaining === 1 ? 'wallpaper.dayLeft' : 'wallpaper.daysLeft', daysRemaining);
     ctx.fillText(daysLeftText, centerX, centerY + (height * 0.08));
 
 
@@ -649,6 +747,7 @@ function updateURL() {
     params.set('width', state.width);
     params.set('height', state.height);
     params.set('clockHeight', state.clockHeight);  // Pass clock height for proper spacing
+    params.set('lang', state.wallpaperLang || 'en');  // 壁纸语言
 
     if (state.selectedType === 'life') {
         if (state.dob) params.set('dob', state.dob);

@@ -77,19 +77,18 @@ lifegrid/
 
 ---
 
-### [TODO-4] Device Selection State Machine
-**File**: `app.js` (lines 85-118)
-**Issue**: Device selection scattered (populate → select → store → validate)
-- Consider: What if user device doesn't match selected? Fallback logic implicit
-- Suggest: Explicit state machine
-
-```js
-const DeviceState = {
-  INITIALIZING: 'init',
-  SELECTED: 'selected',
-  SYNC_ERROR: 'error'
-};
-```
+### [DONE] TODO-4: Device Selection State Machine
+**Status**: ✅ 已完成（2026-01-30）
+**实现**:
+- 引入显式状态机 `DeviceState`（第 29-34 行）：
+  - `INITIALIZING` → 正在探测默认设备
+  - `SELECTED` → 已成功选中设备
+  - `FALLBACK` → 降级到默认设备
+- 新增 `initializeDevice()` 函数（第 146-162 行）：状态机入口
+- 新增 `transitionDeviceState()` 函数（第 168-191 行）：统一状态转换器
+- 重构 `selectDevice()` 使用状态机（第 319-333 行）
+- 所有状态转换带日志，完全可追溯
+- 消除隐式 `if (!device) return` 降级
 
 ---
 

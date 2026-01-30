@@ -1,5 +1,6 @@
 import { createSVG, rect, circle, text, arc, parseColor, colorWithAlpha } from '../svg.js';
 import { getDateInTimezone, getDaysBetween } from '../timezone.js';
+import { t } from '../i18n.js';
 
 /**
  * Generate Goal Countdown Wallpaper
@@ -15,7 +16,8 @@ export function generateGoalCountdown(options) {
         timezone,
         goalDate,
         goalName = 'Goal',
-        clockHeight = 0.18
+        clockHeight = 0.18,
+        lang = 'en'
     } = options;
 
     // Get current date in user's timezone
@@ -75,7 +77,8 @@ export function generateGoalCountdown(options) {
     });
 
     // "days left" label
-    content += text(centerX, centerY + height * 0.08, daysRemaining === 1 ? 'day left' : 'days left', {
+    const daysLeftText = daysRemaining === 1 ? t('dayLeft', daysRemaining, lang) : t('daysLeft', daysRemaining, lang);
+    content += text(centerX, centerY + height * 0.08, daysLeftText, {
         fill: colorWithAlpha('#ffffff', 0.5),
         fontSize: width * 0.04,
         fontWeight: '400',

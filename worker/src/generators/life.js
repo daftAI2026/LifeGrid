@@ -1,5 +1,6 @@
 import { createSVG, rect, circle, text, parseColor, colorWithAlpha } from '../svg.js';
 import { getDateInTimezone, getWeeksBetween } from '../timezone.js';
+import { t } from '../i18n.js';
 
 /**
  * Generate Life Calendar Wallpaper
@@ -15,7 +16,8 @@ export function generateLifeCalendar(options) {
         timezone,
         dob,
         lifespan = 80,
-        clockHeight = 0.22
+        clockHeight = 0.22,
+        lang = 'en'
     } = options;
 
     // Get current date in user's timezone
@@ -98,8 +100,10 @@ export function generateLifeCalendar(options) {
     const weeksRemaining = totalWeeks - weeksLived;
     const statsY = startY + gridHeight + (height * 0.025);
 
-    const statsContent = `<tspan fill="${parseColor(accentColor)}" font-family="Inter" font-weight="500">${weeksRemaining.toLocaleString()} weeks left</tspan>` +
-        `<tspan fill="rgba(255,255,255,0.5)" font-family="'SF Mono', 'Menlo', 'Courier New', monospace" font-weight="400"> · ${progressPercent}% lived</tspan>`;
+    const weeksText = weeksRemaining === 1 ? t('weekLeft', weeksRemaining, lang) : t('weeksLeft', weeksRemaining, lang);
+    const livedText = t('lived', progressPercent, lang);
+    const statsContent = `<tspan fill="${parseColor(accentColor)}" font-family="Inter" font-weight="500">${weeksText}</tspan>` +
+        `<tspan fill="rgba(255,255,255,0.5)" font-family="'SF Mono', 'Menlo', 'Courier New', monospace" font-weight="400"> · ${livedText}</tspan>`;
 
     content += text(width / 2, statsY, statsContent, {
         fontSize: width * 0.022,

@@ -832,7 +832,8 @@ body {
   transform: translateX(-50%);
   width: 100px;
   height: 28px;
-  background: var(--bg);
+  background: #000;
+  /* 硬件颜色：始终黑色，不跟主题 */
   border-radius: 0 0 16px 16px;
   z-index: 10;
 }
@@ -960,6 +961,25 @@ body {
   transform: translateY(-50%);
   pointer-events: none;
   color: var(--text-muted);
+}
+
+/* Config Row (双列布局，用于位置+壁纸语言) */
+.config-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .config-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Color Fields */

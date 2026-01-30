@@ -55,7 +55,8 @@ export const i18nData = {
 
     // Config Groups
     'config.location': 'Location',
-    'config.locationHint': 'For accurate timezone',
+    'config.locationHint': 'For timezone',
+    'config.wallpaperLang': 'Wallpaper Language',
     'config.dateOfBirth': 'Date of Birth',
     'config.dateOfBirthHint': '(Optional)',
     'config.lifespan': 'Lifespan',
@@ -69,6 +70,14 @@ export const i18nData = {
     'config.device': 'Device',
     'config.deviceResolution': 'Resolution',
     'config.url': 'Your Wallpaper URL',
+
+    // Wallpaper Text (壁纸内部文字)
+    'wallpaper.daysLeft': '{n} days left',
+    'wallpaper.dayLeft': '{n} day left',
+    'wallpaper.complete': '{n}% complete',
+    'wallpaper.weeksLeft': '{n} weeks left',
+    'wallpaper.weekLeft': '{n} week left',
+    'wallpaper.lived': '{n}% lived',
 
     // Color Presets
     'preset.classic': 'Classic',
@@ -183,7 +192,8 @@ export const i18nData = {
 
     // 配置组
     'config.location': '位置',
-    'config.locationHint': '用于准确的时区',
+    'config.locationHint': '时区',
+    'config.wallpaperLang': '壁纸语言',
     'config.dateOfBirth': '出生日期',
     'config.dateOfBirthHint': '（可选）',
     'config.lifespan': '预期寿命',
@@ -197,6 +207,14 @@ export const i18nData = {
     'config.device': '设备',
     'config.deviceResolution': '分辨率',
     'config.url': '你的壁纸 URL',
+
+    // 壁纸内部文字
+    'wallpaper.daysLeft': '剩余 {n} 天',
+    'wallpaper.dayLeft': '剩余 {n} 天',
+    'wallpaper.complete': '进度 {n}%',
+    'wallpaper.weeksLeft': '剩余 {n} 周',
+    'wallpaper.weekLeft': '剩余 {n} 周',
+    'wallpaper.lived': '已度过 {n}%',
 
     // 颜色预设
     'preset.classic': '经典',
@@ -311,7 +329,8 @@ export const i18nData = {
 
     // 配置組
     'config.location': '位置',
-    'config.locationHint': '用於準確的時區',
+    'config.locationHint': '時區',
+    'config.wallpaperLang': '桌布語言',
     'config.dateOfBirth': '出生日期',
     'config.dateOfBirthHint': '（選擇性）',
     'config.lifespan': '預期壽命',
@@ -325,6 +344,14 @@ export const i18nData = {
     'config.device': '裝置',
     'config.deviceResolution': '解析度',
     'config.url': '你的桌布 URL',
+
+    // 桌布內部文字
+    'wallpaper.daysLeft': '剩餘 {n} 天',
+    'wallpaper.dayLeft': '剩餘 {n} 天',
+    'wallpaper.complete': '進度 {n}%',
+    'wallpaper.weeksLeft': '剩餘 {n} 週',
+    'wallpaper.weekLeft': '剩餘 {n} 週',
+    'wallpaper.lived': '已度過 {n}%',
 
     // 顏色預設
     'preset.classic': '經典',
@@ -439,7 +466,8 @@ export const i18nData = {
 
     // 設定グループ
     'config.location': '位置',
-    'config.locationHint': '正確なタイムゾーンのため',
+    'config.locationHint': 'タイムゾーン',
+    'config.wallpaperLang': '壁紙言語',
     'config.dateOfBirth': '生年月日',
     'config.dateOfBirthHint': '（オプション）',
     'config.lifespan': '予想寿命',
@@ -453,6 +481,14 @@ export const i18nData = {
     'config.device': 'デバイス',
     'config.deviceResolution': '解像度',
     'config.url': 'あなたの壁紙 URL',
+
+    // 壁紙内部文字
+    'wallpaper.daysLeft': '残り {n} 日',
+    'wallpaper.dayLeft': '残り {n} 日',
+    'wallpaper.complete': '{n}% 完了',
+    'wallpaper.weeksLeft': '残り {n} 週',
+    'wallpaper.weekLeft': '残り {n} 週',
+    'wallpaper.lived': '{n}% 生きた',
 
     // 色プリセット
     'preset.classic': 'クラシック',

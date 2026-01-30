@@ -102,6 +102,7 @@ async function handleGenerate(request, url, corsHeaders, ctx) {
             accentColor: validated.accent,
             timezone,
             clockHeight: validated.clockHeight,
+            lang: validated.lang,  // 壁纸语言
             dob: validated.dob,
             lifespan: validated.lifespan,
             goalDate: validated.goal,
@@ -243,7 +244,7 @@ async function handleHomepage(request, corsHeaders) {
         // 可选方案1：使用 fetch 从源服务器获取
         // 可选方案2：打包到Worker中
         const indexResponse = await fetch('https://lifegrid.aradhyaxstudy.workers.dev/index.html');
-        
+
         if (!indexResponse.ok) {
             // 备选：返回简单的 HTML 框架
             const html = `<!DOCTYPE html>
@@ -259,7 +260,7 @@ async function handleHomepage(request, corsHeaders) {
     <script type="module" src="app.js"><\/script>
 </body>
 </html>`;
-            
+
             return new Response(html, {
                 status: 200,
                 headers: {
