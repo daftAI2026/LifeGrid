@@ -26,3 +26,7 @@ yarn-error.log*
 .idea/
 
 internal_docs/
+
+# AI/Process Documentation (not project code)
+AGENT.md
+IMPLEMENTATION_SUMMARY.md
