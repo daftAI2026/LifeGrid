@@ -10,8 +10,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+  <!-- 基础字体 + 多语言字体（由 i18n-loader 动态加载） -->
   <link
-    href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -19,9 +21,15 @@
 <body>
   <div class="noise"></div>
 
+  <!-- Load i18n FIRST before any other scripts -->
+  <script type="module">
+    import i18nManager from './i18n-loader.js';
+  </script>
+
   <!-- Navigation -->
   <nav class="nav">
     <div class="nav-content">
+      <!-- Left: Logo -->
       <a href="#" class="nav-logo">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
           <rect x="2" y="2" width="6" height="6" rx="1" fill="currentColor" />
@@ -36,14 +44,58 @@
         </svg>
         <span>LifeGrid</span>
       </a>
-      <div class="nav-links">
-        <a href="#types" class="nav-link">Wallpapers</a>
-        <a href="#customize" class="nav-link">Customize</a>
-        <a href="#setup" class="nav-link">Setup</a>
-        <a href="https://github.com/aradhyacp/LifeGrid" class="nav-github nav-link" target="_blank" rel="noopener noreferrer" aria-label="LifeGrid on GitHub">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-github-icon lucide-github"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
-        GitHub
-      </a>
+
+      <!-- Center: Navigation Links -->
+      <div class="nav-center">
+        <a href="#types" class="nav-link" data-i18n="nav.wallpapers">Wallpapers</a>
+        <a href="#customize" class="nav-link" data-i18n="nav.customize">Customize</a>
+        <a href="#setup" class="nav-link" data-i18n="nav.setup">Setup</a>
+      </div>
+
+      <!-- Right: Tools (Theme + Language + GitHub) -->
+      <div class="nav-tools">
+        <!-- Theme Switcher -->
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+          <!-- Sun icon (light mode) -->
+          <svg class="theme-icon theme-icon-light" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+          </svg>
+          <!-- Moon icon (dark mode) -->
+          <svg class="theme-icon theme-icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+        </button>
+
+        <!-- Language Selector -->
+        <div class="nav-lang-selector">
+          <select id="lang-select" class="lang-select" aria-label="Select language">
+            <option value="en">🇺🇸 English</option>
+            <option value="zh-CN">🇨🇳 简体中文</option>
+            <option value="zh-TW">🇨🇳 繁體中文</option>
+            <option value="ja">🇯🇵 日本語</option>
+          </select>
+        </div>
+
+        <!-- GitHub Link -->
+        <a href="https://github.com/daftAI2026/LifeGrid" class="nav-github" target="_blank" rel="noopener noreferrer"
+          aria-label="LifeGrid on GitHub">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+            <path d="M9 18c-4.51 2-5-2-7-2" />
+          </svg>
+        </a>
       </div>
     </div>
   </nav>
@@ -51,16 +103,16 @@
   <!-- Hero Section -->
   <header class="hero">
     <div class="hero-content">
-      <p class="hero-eyebrow">Dynamic Wallpapers</p>
+      <p class="hero-eyebrow" data-i18n="hero.eyebrow">Dynamic Wallpapers</p>
       <h1 class="hero-title">
-        Your time.<br>
-        <span class="hero-title-accent">Visualized.</span>
+        <span data-i18n="hero.title">Your time.</span><br>
+        <span class="hero-title-accent" data-i18n="hero.titleAccent">Visualized.</span>
       </h1>
-      <p class="hero-subtitle">
+      <p class="hero-subtitle" data-i18n="hero.subtitle">
         Wallpapers that update daily. Track your year, your life, or countdown to your goals.
       </p>
       <a href="#types" class="hero-cta">
-        <span>Get Started</span>
+        <span data-i18n="hero.cta">Get Started</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 5v14M19 12l-7 7-7-7" />
         </svg>
@@ -87,8 +139,8 @@
   <!-- Wallpaper Types Section -->
   <section id="types" class="section types-section">
     <div class="section-header">
-      <p class="section-eyebrow">Choose Your Style</p>
-      <h2 class="section-title">Three ways to see your time</h2>
+      <p class="section-eyebrow" data-i18n="types.header">Choose Your Style</p>
+      <h2 class="section-title" data-i18n="types.title">Three ways to see your time</h2>
     </div>
 
     <div class="type-cards">
@@ -102,29 +154,29 @@
         <div class="type-card-content">
           <div class="type-card-header">
             <span class="type-number">01</span>
-            <h3 class="type-name">Year Progress</h3>
+            <h3 class="type-name" data-i18n="type.year.name">Year Progress</h3>
           </div>
-          <p class="type-description">
+          <p class="type-description" data-i18n="type.year.description">
             Every day of the year as a grid. Watch your year fill up, one square at a time.
           </p>
           <div class="type-stats">
             <div class="stat">
               <span class="stat-value" id="year-day">--</span>
-              <span class="stat-label">Day</span>
+              <span class="stat-label" data-i18n="type.year.statDay">Day</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat">
               <span class="stat-value" id="year-week">--</span>
-              <span class="stat-label">Week</span>
+              <span class="stat-label" data-i18n="type.year.statWeek">Week</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat">
               <span class="stat-value" id="year-percent">--%</span>
-              <span class="stat-label">Complete</span>
+              <span class="stat-label" data-i18n="type.year.statComplete">Complete</span>
             </div>
           </div>
           <button class="type-select-btn">
-            <span>Select</span>
+            <span data-i18n="button.select">Select</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
@@ -142,24 +194,24 @@
         <div class="type-card-content">
           <div class="type-card-header">
             <span class="type-number">02</span>
-            <h3 class="type-name">Life Calendar</h3>
+            <h3 class="type-name" data-i18n="type.life.name">Life Calendar</h3>
           </div>
-          <p class="type-description">
+          <p class="type-description" data-i18n="type.life.description">
             Every week of your life as a dot. A powerful reminder to make each week count.
           </p>
           <div class="type-stats">
             <div class="stat">
               <span class="stat-value">4,160</span>
-              <span class="stat-label">Total Weeks</span>
+              <span class="stat-label" data-i18n="type.life.statWeeks">Total Weeks</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat">
               <span class="stat-value">80</span>
-              <span class="stat-label">Years</span>
+              <span class="stat-label" data-i18n="type.life.statYears">Years</span>
             </div>
           </div>
           <button class="type-select-btn">
-            <span>Select</span>
+            <span data-i18n="button.select">Select</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
@@ -186,24 +238,24 @@
         <div class="type-card-content">
           <div class="type-card-header">
             <span class="type-number">03</span>
-            <h3 class="type-name">Goal Countdown</h3>
+            <h3 class="type-name" data-i18n="type.goal.name">Goal Countdown</h3>
           </div>
-          <p class="type-description">
+          <p class="type-description" data-i18n="type.goal.description">
             Count down to what matters. Big launch, vacation, or life milestone.
           </p>
           <div class="type-stats">
             <div class="stat">
               <span class="stat-value">∞</span>
-              <span class="stat-label">Goals</span>
+              <span class="stat-label" data-i18n="type.goal.statGoals">Goals</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat">
-              <span class="stat-value">Daily</span>
-              <span class="stat-label">Updates</span>
+              <span class="stat-value" data-i18n="type.goal.statUpdates">Daily</span>
+              <span class="stat-label" data-i18n="type.goal.statUpdates">Updates</span>
             </div>
           </div>
           <button class="type-select-btn">
-            <span>Select</span>
+            <span data-i18n="button.select">Select</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
@@ -222,32 +274,32 @@
           <div class="device-notch"></div>
           <div class="device-screen" id="preview-screen">
             <div class="preview-placeholder">
-              <span>Select a wallpaper type</span>
+              <span data-i18n="preview.selectType">Select a wallpaper type</span>
             </div>
           </div>
           <div class="device-home"></div>
         </div>
-        <p class="preview-hint">Live Preview</p>
+        <p class="preview-hint" data-i18n="preview.hint">Live Preview</p>
       </div>
 
       <!-- Right: Configuration -->
       <div class="config-panel">
         <div class="section-header">
-          <p class="section-eyebrow">Personalize</p>
-          <h2 class="section-title">Make it yours</h2>
+          <p class="section-eyebrow" data-i18n="customize.header">Personalize</p>
+          <h2 class="section-title" data-i18n="customize.title">Make it yours</h2>
         </div>
 
         <!-- Selected Type Indicator -->
         <div class="selected-type-indicator" id="selected-type">
-          <span class="indicator-label">Selected:</span>
-          <span class="indicator-value">None</span>
+          <span class="indicator-label" data-i18n="customize.selected">Selected:</span>
+          <span class="indicator-value" data-i18n="customize.selectedNone">None</span>
         </div>
 
         <!-- Country -->
         <div class="config-group">
           <label class="config-label">
-            <span class="label-text">Location</span>
-            <span class="label-hint">For accurate timezone</span>
+            <span class="label-text" data-i18n="config.location">Location</span>
+            <span class="label-hint" data-i18n="config.locationHint">For accurate timezone</span>
           </label>
           <div class="select-wrapper">
             <select id="country-select" class="config-select">
@@ -263,13 +315,13 @@
         <!-- Life Calendar Options -->
         <div class="config-group life-only hidden" id="life-config">
           <label class="config-label">
-            <span class="label-text">Date of Birth</span>
+            <span class="label-text" data-i18n="config.dateOfBirth">Date of Birth</span>
           </label>
           <input type="date" id="dob-input" class="config-input">
 
           <label class="config-label" style="margin-top: 1rem;">
-            <span class="label-text">Expected Lifespan</span>
-            <span class="label-hint">years</span>
+            <span class="label-text" data-i18n="config.lifespan">Expected Lifespan</span>
+            <span class="label-hint" data-i18n="config.lifespanHint">years</span>
           </label>
           <input type="number" id="lifespan-input" class="config-input" value="80" min="50" max="120">
         </div>
@@ -277,12 +329,12 @@
         <!-- Goal Options -->
         <div class="config-group goal-only hidden" id="goal-config">
           <label class="config-label">
-            <span class="label-text">Goal Name</span>
+            <span class="label-text" data-i18n="config.goalName">Goal Name</span>
           </label>
           <input type="text" id="goal-name-input" class="config-input" placeholder="Product Launch">
 
           <label class="config-label" style="margin-top: 1rem;">
-            <span class="label-text">Target Date</span>
+            <span class="label-text" data-i18n="config.targetDate">Target Date</span>
           </label>
           <input type="date" id="goal-date-input" class="config-input">
         </div>
@@ -290,18 +342,18 @@
         <!-- Colors -->
         <div class="config-group">
           <label class="config-label">
-            <span class="label-text">Colors</span>
+            <span class="label-text" data-i18n="config.colors">Colors</span>
           </label>
           <div class="color-row">
             <div class="color-field">
-              <span class="color-field-label">Background</span>
+              <span class="color-field-label" data-i18n="config.background">Background</span>
               <div class="color-input-wrapper">
                 <input type="color" id="bg-color" value="#000000" class="color-input">
                 <span class="color-hex" id="bg-hex">#000000</span>
               </div>
             </div>
             <div class="color-field">
-              <span class="color-field-label">Accent</span>
+              <span class="color-field-label" data-i18n="config.accent">Accent</span>
               <div class="color-input-wrapper">
                 <input type="color" id="accent-color" value="#FFFFFF" class="color-input">
                 <span class="color-hex" id="accent-hex">#FFFFFF</span>
@@ -335,8 +387,8 @@
         <!-- Device -->
         <div class="config-group">
           <label class="config-label">
-            <span class="label-text">Device</span>
-            <span class="label-hint" id="device-resolution">1179 × 2556</span>
+            <span class="label-text" data-i18n="config.device">Device</span>
+            <span class="label-hint" id="device-resolution" data-i18n="config.deviceResolution">1179 × 2556</span>
           </label>
           <div class="select-wrapper">
             <select id="device-select" class="config-select">
@@ -352,16 +404,17 @@
         <!-- Generated URL -->
         <div class="config-group url-group">
           <label class="config-label">
-            <span class="label-text">Your Wallpaper URL</span>
+            <span class="label-text" data-i18n="config.url">Your Wallpaper URL</span>
           </label>
           <div class="url-field">
-            <input type="text" id="generated-url" class="url-input" readonly placeholder="Configure options above...">
+            <input type="text" id="generated-url" class="url-input" readonly placeholder="Configure options above..."
+              data-i18n="url.placeholder">
             <button class="copy-btn" id="copy-btn">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" />
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
-              <span>Copy</span>
+              <span data-i18n="url.copy">Copy</span>
             </button>
           </div>
         </div>
@@ -372,15 +425,15 @@
   <!-- Setup Instructions -->
   <section id="setup" class="section setup-section">
     <div class="section-header">
-      <p class="section-eyebrow">Almost There</p>
-      <h2 class="section-title">Set it and forget it</h2>
+      <p class="section-eyebrow" data-i18n="setup.header">Almost There</p>
+      <h2 class="section-title" data-i18n="setup.title">Set it and forget it</h2>
     </div>
 
     <div class="setup-container">
       <!-- Sidebar -->
       <div class="setup-sidebar">
-        <button class="setup-sidebar-item active" data-platform="ios">iOS</button>
-        <button class="setup-sidebar-item" data-platform="android">Android</button>
+        <button class="setup-sidebar-item active" data-platform="ios" data-i18n="setup.ios">iOS</button>
+        <button class="setup-sidebar-item" data-platform="android" data-i18n="setup.android">Android</button>
       </div>
 
       <!-- Vertical Divider -->
@@ -394,48 +447,33 @@
             <div class="setup-step">
               <div class="step-number">1</div>
               <div class="step-content">
-                <h3>Copy URL</h3>
-                <p>Configure your wallpaper above and copy the generated URL</p>
+                <h3 data-i18n="setup.ios.step1">Copy URL</h3>
+                <p data-i18n="setup.ios.step1Desc">Configure your wallpaper above and copy the generated URL</p>
               </div>
             </div>
             <div class="step-connector"></div>
             <div class="setup-step">
               <div class="step-number">2</div>
               <div class="step-content">
-                <h3>Create Automation</h3>
-                <p style="text-align: left; font-size: 0.8rem;">
-                  Shortcuts App → Automation Tab → New Automation<br>
-                  Time of Day: <strong>6:00 AM</strong> → Repeat <strong>Daily</strong><br>
-                  Select <strong>Run Immediately</strong> → Create New Shortcut
-                </p>
+                <h3 data-i18n="setup.ios.step2">Create Automation</h3>
+                <p style="text-align: left; font-size: 0.8rem;" data-i18n="setup.ios.step2Desc"></p>
               </div>
             </div>
             <div class="step-connector"></div>
             <div class="setup-step">
               <div class="step-number">3</div>
               <div class="step-content">
-                <h3>Configure Shortcut</h3>
-                <p style="text-align: left; font-size: 0.8rem; overflow-wrap: anywhere;">
-                  <strong>1. Get Contents of URL:</strong><br>
-                  <span class="code-snippet">https://lifegrid.aradhyaxstudy.workers.dev/generate?...</span><br><br>
-                  <strong>2. Set Wallpaper Photo:</strong><br>
-                  Choose "Lock Screen" as the target.
-                </p>
+                <h3 data-i18n="setup.ios.step3">Configure Shortcut</h3>
+                <p style="text-align: left; font-size: 0.8rem; overflow-wrap: anywhere;"
+                  data-i18n="setup.ios.step3Desc"></p>
               </div>
             </div>
             <div class="step-connector"></div>
             <div class="setup-step">
               <div class="step-number">4</div>
               <div class="step-content">
-                <h3>Finalize</h3>
-                <div
-                  style="font-weight: 500; background-color: #ffd90054; padding: 4px 10px; border-radius: 4px; display: inline-block; line-height: 1.4; margin-top: 8px;">
-                  <p style="margin: 0; font-size: 0.8rem; color: #FFD700;">
-                    In "Set Wallpaper Photo", tap arrow (→):<br>
-                    Disable <strong>Crop to Subject</strong><br>
-                    Disable <strong>Show Preview</strong>
-                  </p>
-                </div>
+                <h3 data-i18n="setup.ios.step4">Finalize</h3>
+                <p class="highlight-badge" data-i18n="setup.ios.step4Desc"></p>
               </div>
             </div>
           </div>
@@ -447,51 +485,40 @@
             <div class="setup-step">
               <div class="step-number">1</div>
               <div class="step-content">
-                <h3>Copy URL</h3>
-                <p>Configure your wallpaper above and copy the generated URL</p>
+                <h3 data-i18n="setup.android.step1">Copy URL</h3>
+                <p data-i18n="setup.android.step1Desc">Configure your wallpaper above and copy the generated URL</p>
               </div>
             </div>
             <div class="step-connector"></div>
             <div class="setup-step">
               <div class="step-number">2</div>
               <div class="step-content">
-                <h3>Prerequisites</h3>
-                <p>Install <strong>MacroDroid</strong> from Google Play Store.</p>
+                <h3 data-i18n="setup.android.step2">Prerequisites</h3>
+                <p data-i18n="setup.android.step2Desc"></p>
               </div>
             </div>
             <div class="step-connector"></div>
             <div class="setup-step">
               <div class="step-number">3</div>
               <div class="step-content">
-                <h3>Setup Macro</h3>
-                <p>Trigger: Date/Time → Day/Time (00:01:00) → Active all weekdays</p>
+                <h3 data-i18n="setup.android.step3">Setup Macro</h3>
+                <p data-i18n="setup.android.step3Desc"></p>
               </div>
             </div>
             <div class="step-connector"></div>
             <div class="setup-step">
               <div class="step-number">4</div>
               <div class="step-content">
-                <h3>Configure Actions</h3>
-                <p style="text-align: left; font-size: 0.8rem;">
-                  <strong>4.1 Download Image</strong><br>
-                  Web Interactions → HTTP Request (GET)<br>
-                  Paste URL. Enable "Block next actions"<br>
-                  Tick "Save response" → <span class="code-snippet">/Download/lifegrid.png</span><br><br>
-                  <strong>4.2 Set Wallpaper</strong><br>
-                  Device Settings → Set Wallpaper<br>
-                  Select <span class="code-snippet">/Download/lifegrid.png</span><br><br>
-                  <span
-                    style="color: #FFD700; font-weight: 500; background-color: #ffd90054; padding: 4px 10px; border-radius: 4px; display: inline-block; line-height: 1.4; margin-top: 8px;">⚠
-                    Use exact same filename</span>
-                </p>
+                <h3 data-i18n="setup.android.step4">Configure Actions</h3>
+                <p style="text-align: left; font-size: 0.8rem;" data-i18n="setup.android.step4Desc"></p>
               </div>
             </div>
             <div class="step-connector"></div>
             <div class="setup-step">
               <div class="step-number">5</div>
               <div class="step-content">
-                <h3>Finalize</h3>
-                <p>Give macro a name → Tap <strong>Create Macro</strong></p>
+                <h3 data-i18n="setup.android.step5">Finalize</h3>
+                <p data-i18n="setup.android.step5Desc"></p>
               </div>
             </div>
           </div>
@@ -517,12 +544,7 @@
         </svg>
         <span>LifeGrid</span>
       </div>
-      <p class="footer-tagline">Time, visualized.</p>
-      <div class="footer-github"> <a href="https://github.com/aradhyacp/LifeGrid" class="github-footer-href" target="_blank" rel="noopener noreferrer" aria-label="LifeGrid on GitHub">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-github-icon lucide-github"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
-        GitHub
-        </a>
-      </div>
+      <p class="footer-tagline" data-i18n="footer.tagline">Time, visualized.</p>
     </div>
   </footer>
 

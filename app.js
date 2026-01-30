@@ -1,13 +1,30 @@
 /**
- * LifeGrid - Frontend Application
- * Apple-inspired dynamic wallpaper generator
+ * [INPUT]: 依赖 ./data/countries.js 的 countries 数据，依赖 ./data/devices.js 的 devices/getDevice，依赖 ./data/i18n.js 的 i18n 国际化服务
+ * [OUTPUT]: 提供 LifeGrid 主应用的完整交互逻辑、状态管理和 UI 渲染
+ * [POS]: 应用顶层入口，聚合所有业务逻辑和用户交互
+ * [PROTOCOL]: 修改时更新此头部，确保依赖关系准确；涉及翻译改动需同步检查 data/i18n.js
  */
 
 import { countries } from './data/countries.js';
 import { devices, getDevice } from './data/devices.js';
+import { i18nData, countryToLang, DEFAULT_LANG, SUPPORTED_LANGS } from './data/i18n.js';
 
 // ===== Configuration =====
 const WORKER_URL = 'https://lifegrid.aradhyaxstudy.workers.dev';
+
+// ===== i18n Helper =====
+function i18n(key) {
+    // 从 window.i18n 获取当前语言和翻译
+    if (window.i18n && window.i18n.get) {
+        return window.i18n.get(key);
+    }
+    // 回退：直接用 i18nData
+    const lang = DEFAULT_LANG;
+    if (!i18nData[lang] || !i18nData[lang][key]) {
+        return i18nData[DEFAULT_LANG]?.[key] || key;
+    }
+    return i18nData[lang][key];
+}
 
 // ===== State =====
 const state = {
@@ -21,10 +38,24 @@ const state = {
     clockHeight: 0.18,  // Space for iPhone clock/date
     dob: null,
     lifespan: 80,
-    goalName: 'Goal',
+    goalName: i18n('config.goalName'),
     goalDate: null,
     selectedDevice: null
 };
+
+// ===== 统一状态更新入口 (TODO-3 重构) =====
+function setState(updates, options = {}) {
+    Object.assign(state, updates);
+    if (!options.silent) {
+        render();
+    }
+}
+
+// ===== 统一渲染入口 =====
+function render() {
+    updatePreview();
+    updateURL();
+}
 
 // ===== DOM Elements =====
 const $ = (sel) => document.querySelector(sel);
@@ -177,7 +208,7 @@ function autoDetectCountry() {
             state.timezone = country.timezone;
         }
     } catch (e) {
-        console.log('Could not auto-detect country');
+        console.log(i18n('debug.autoDetectFailed'));
     }
 }
 
@@ -192,9 +223,10 @@ function bindEvents() {
     elements.countrySelect.addEventListener('change', (e) => {
         const country = countries.find(c => c.code === e.target.value);
         if (country) {
-            state.country = country.code;
-            state.timezone = country.timezone;
-            updateURL();
+            setState({
+                country: country.code,
+                timezone: country.timezone
+            });
         }
     });
 
@@ -205,17 +237,13 @@ function bindEvents() {
 
     // Color Pickers
     elements.bgColor.addEventListener('input', (e) => {
-        state.bgColor = e.target.value;
         elements.bgHex.textContent = e.target.value.toUpperCase();
-        updatePreview();
-        updateURL();
+        setState({ bgColor: e.target.value });
     });
 
     elements.accentColor.addEventListener('input', (e) => {
-        state.accentColor = e.target.value;
         elements.accentHex.textContent = e.target.value.toUpperCase();
-        updatePreview();
-        updateURL();
+        setState({ accentColor: e.target.value });
     });
 
     // Make color wrappers clickable
@@ -233,42 +261,31 @@ function bindEvents() {
             const bg = btn.dataset.bg;
             const accent = btn.dataset.accent;
 
-            state.bgColor = bg;
-            state.accentColor = accent;
-
             elements.bgColor.value = bg;
             elements.bgHex.textContent = bg.toUpperCase();
             elements.accentColor.value = accent;
             elements.accentHex.textContent = accent.toUpperCase();
 
-            updatePreview();
-            updateURL();
+            setState({ bgColor: bg, accentColor: accent });
         });
     });
 
     // Life Calendar Inputs
     elements.dobInput?.addEventListener('change', (e) => {
-        state.dob = e.target.value;
-        updatePreview();
-        updateURL();
+        setState({ dob: e.target.value });
     });
 
     elements.lifespanInput?.addEventListener('input', (e) => {
-        state.lifespan = parseInt(e.target.value) || 80;
-        updateURL();
+        setState({ lifespan: parseInt(e.target.value) || 80 });
     });
 
     // Goal Inputs
     elements.goalNameInput?.addEventListener('input', (e) => {
-        state.goalName = e.target.value || 'Goal';
-        updatePreview();
-        updateURL();
+        setState({ goalName: e.target.value || i18n('config.goalName') });
     });
 
     elements.goalDateInput?.addEventListener('change', (e) => {
-        state.goalDate = e.target.value;
-        updatePreview();
-        updateURL();
+        setState({ goalDate: e.target.value });
     });
 
     // Copy Button
@@ -316,8 +333,7 @@ function selectDevice(deviceName) {
     // Update resolution hint
     elements.deviceResolution.textContent = `${device.width} × ${device.height}`;
 
-    updatePreview();
-    updateURL();
+    render();
 }
 
 // ===== Type Selection =====
@@ -330,7 +346,11 @@ function selectType(type) {
     });
 
     // Update indicator
-    const typeNames = { year: 'Year Progress', life: 'Life Calendar', goal: 'Goal Countdown' };
+    const typeNames = {
+        year: i18n('type.year.name'),
+        life: i18n('type.life.name'),
+        goal: i18n('type.goal.name')
+    };
     elements.selectedTypeIndicator.textContent = typeNames[type];
 
     // Show/hide conditional config
@@ -340,14 +360,13 @@ function selectType(type) {
     // Scroll to customize section
     $('#customize').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    updatePreview();
-    updateURL();
+    render();
 }
 
 // ===== Preview Generator =====
 function updatePreview() {
     if (!state.selectedType) {
-        elements.previewScreen.innerHTML = '<div class="preview-placeholder"><span>Select a wallpaper type</span></div>';
+        elements.previewScreen.innerHTML = `<div class="preview-placeholder"><span>${i18n('preview.selectType')}</span></div>`;
         return;
     }
 
@@ -382,6 +401,31 @@ function updatePreview() {
 
     elements.previewScreen.innerHTML = '';
     elements.previewScreen.appendChild(canvas);
+}
+
+// ===== 网格统计文本渲染器 (TODO-2 重构: 提取公共逻辑) =====
+function drawStats(ctx, width, y, text1, text2, fontScale = 1) {
+    const font1 = `500 ${width * 0.032 * fontScale}px Inter, sans-serif`;
+    const font2 = `500 ${width * 0.026 * fontScale}px "SF Mono", "Menlo", "Courier New", monospace`;
+
+    ctx.font = font1;
+    const w1 = ctx.measureText(text1).width;
+    ctx.font = font2;
+    const w2 = ctx.measureText(text2).width;
+
+    const totalW = w1 + w2;
+    const x = (width - totalW) / 2;
+
+    // Part 1: Accent 色
+    ctx.fillStyle = state.accentColor;
+    ctx.font = font1;
+    ctx.textAlign = 'left';
+    ctx.fillText(text1, x, y);
+
+    // Part 2: Grey
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = font2;
+    ctx.fillText(text2, x + w1, y);
 }
 
 function drawYearPreview(ctx, width, height) {
@@ -451,32 +495,7 @@ function drawYearPreview(ctx, width, height) {
     const percent = Math.round((dayOfYear / totalDays) * 100);
     const statsY = startY + gridHeight + (height * 0.03);
 
-    // Split text rendering for multi-style
-    const text1 = `${daysLeft} days left`;
-    const text2 = ` · ${percent}% complete`;
-
-    // Configure fonts
-    const font1 = `500 ${width * 0.032}px Inter, sans-serif`;
-    const font2 = `500 ${width * 0.026}px "SF Mono", "Menlo", "Courier New", monospace`;
-
-    ctx.font = font1;
-    const w1 = ctx.measureText(text1).width;
-    ctx.font = font2;
-    const w2 = ctx.measureText(text2).width;
-
-    const totalW = w1 + w2;
-    const x = (width - totalW) / 2;
-
-    // Draw Part 1 (Accent)
-    ctx.fillStyle = state.accentColor;
-    ctx.font = font1;
-    ctx.textAlign = 'left';
-    ctx.fillText(text1, x, statsY);
-
-    // Draw Part 2 (Grey)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.font = font2;
-    ctx.fillText(text2, x + w1, statsY);
+    drawStats(ctx, width, statsY, `${daysLeft} days left`, ` · ${percent}% complete`);
 }
 
 function drawLifePreview(ctx, width, height) {
@@ -542,31 +561,8 @@ function drawLifePreview(ctx, width, height) {
     const percent = Math.round((weeksLived / totalWeeks) * 100);
     const statsY = startY + gridHeight + (height * 0.035);
 
-    // Split text rendering
-    const text1 = `${weeksLeft.toLocaleString()} weeks left`;
-    const text2 = ` · ${percent}% lived`;
-
-    const font1 = `500 ${width * 0.026}px Inter, sans-serif`; // Smaller for life cal (52 cols)
-    const font2 = `500 ${width * 0.022}px "SF Mono", "Menlo", "Courier New", monospace`;
-
-    ctx.font = font1;
-    const w1 = ctx.measureText(text1).width;
-    ctx.font = font2;
-    const w2 = ctx.measureText(text2).width;
-
-    const totalW = w1 + w2;
-    const x = (width - totalW) / 2;
-
-    // Draw Part 1 (Accent)
-    ctx.fillStyle = state.accentColor;
-    ctx.font = font1;
-    ctx.textAlign = 'left';
-    ctx.fillText(text1, x, statsY);
-
-    // Draw Part 2 (Grey)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.font = font2;
-    ctx.fillText(text2, x + w1, statsY);
+    // fontScale 0.8 适配 52 列更密集的网格
+    drawStats(ctx, width, statsY, `${weeksLeft.toLocaleString()} weeks left`, ` · ${percent}% lived`, 0.8);
 }
 
 function drawGoalPreview(ctx, width, height) {
@@ -613,7 +609,8 @@ function drawGoalPreview(ctx, width, height) {
     // Label
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.font = `${width * 0.03}px Inter, sans-serif`;
-    ctx.fillText(daysRemaining === 1 ? 'day left' : 'days left', centerX, centerY + (height * 0.08));
+    const daysLeftText = daysRemaining === 1 ? i18n('goal.dayLeft') : i18n('goal.daysLeft');
+    ctx.fillText(daysLeftText, centerX, centerY + (height * 0.08));
 
 
     // Goal name
@@ -640,7 +637,7 @@ function hexToRgba(hex, alpha) {
 // ===== URL Builder =====
 function updateURL() {
     if (!state.selectedType || !state.country) {
-        elements.generatedUrl.value = 'Select a wallpaper type and country...';
+        elements.generatedUrl.value = i18n('url.placeholder');
         return;
     }
 
@@ -675,14 +672,155 @@ async function copyURL() {
     try {
         await navigator.clipboard.writeText(url);
         const btnSpan = elements.copyBtn.querySelector('span');
-        btnSpan.textContent = 'Copied!';
+        btnSpan.textContent = i18n('url.copied');
         setTimeout(() => {
-            btnSpan.textContent = 'Copy';
+            btnSpan.textContent = i18n('url.copy');
         }, 2000);
     } catch (e) {
-        console.error('Failed to copy:', e);
+        console.error(i18n('debug.copyFailed'), e);
     }
+}
+
+// ===== Language Switching =====
+function setupLanguageSwitcher() {
+    const langSelect = document.getElementById('lang-select');
+    if (!langSelect) return;
+
+    // 设置初始值
+    langSelect.value = window.i18n.getCurrentLang();
+
+    // 立即更新UI（首次加载）
+    updateUITranslations();
+
+    // 监听语言选择变化
+    langSelect.addEventListener('change', (e) => {
+        const newLang = e.target.value;
+        // 更新全局 window.i18n 状态
+        if (window.i18n && window.i18n.manager) {
+            window.i18n.manager.currentLang = newLang;
+            localStorage.setItem('preferredLang', newLang);
+        }
+        // 刷新UI（重新渲染所有文本）
+        updateUITranslations();
+    });
+
+    // 监听全局i18n变化事件
+    window.addEventListener('i18n-changed', (e) => {
+        const lang = e.detail.lang;
+        langSelect.value = lang;
+        updateUITranslations();
+    });
+}
+
+/**
+ * 重新渲染所有UI文本（语言切换时调用）
+ */
+function updateUITranslations() {
+    // 更新所有带 data-i18n 属性的元素
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        let text = window.i18n.get(key);
+
+        // Hero 标题：英文保留句号，其他语言去掉句号
+        if ((key === 'hero.title' || key === 'hero.titleAccent') && window.i18n.getCurrentLang() !== 'en') {
+            text = text.replace(/。$/, '').replace(/\.$/, '');
+        }
+
+        // 对于 select 的 option，使用 textContent；对于其他元素，根据情况使用 textContent 或 innerHTML
+        if (el.tagName === 'OPTION') {
+            el.textContent = text;
+        } else if (el.tagName === 'INPUT') {
+            el.placeholder = text;
+        } else if (text.includes('<')) {
+            // 如果翻译中包含 HTML 标签，用 innerHTML
+            el.innerHTML = text;
+        } else {
+            // 否则用 textContent
+            el.textContent = text;
+        }
+    });
+
+    // 更新动态UI元素
+    elements.selectedTypeIndicator.textContent = i18n('customize.selectedNone');
+    if (state.selectedType) {
+        const typeKey = `type.${state.selectedType}.name`;
+        elements.selectedTypeIndicator.textContent = i18n(typeKey);
+    }
+
+    // 重新渲染预览
+    if (state.selectedType) {
+        updatePreview();
+    }
+}
+
+// ===== Theme System =====
+/**
+ * 主题切换系统
+ * 支持三种状态：
+ * - 'auto': 跟随系统偏好（默认）
+ * - 'light': 强制明亮模式
+ * - 'dark': 强制暗黑模式
+ */
+function setupThemeSystem() {
+    const themeToggle = document.getElementById('theme-toggle');
+    if (!themeToggle) return;
+
+    // 获取系统主题偏好
+    const getSystemTheme = () => {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    };
+
+    // 获取当前应用的主题（考虑用户偏好和系统偏好）
+    const getCurrentTheme = () => {
+        const stored = localStorage.getItem('theme');
+        if (stored === 'light' || stored === 'dark') {
+            return stored;
+        }
+        // 默认或 'auto'：跟随系统
+        return getSystemTheme();
+    };
+
+    // 应用主题到 DOM
+    const applyTheme = (theme) => {
+        document.documentElement.setAttribute('data-theme', theme);
+    };
+
+    // 切换主题（循环：auto → light → dark → auto）
+    const cycleTheme = () => {
+        const stored = localStorage.getItem('theme') || 'auto';
+        let next;
+
+        if (stored === 'auto') {
+            // auto → 切换到与当前系统相反的模式
+            next = getSystemTheme() === 'dark' ? 'light' : 'dark';
+        } else if (stored === 'light') {
+            next = 'dark';
+        } else {
+            // dark → back to auto
+            next = 'auto';
+        }
+
+        localStorage.setItem('theme', next);
+        const actualTheme = next === 'auto' ? getSystemTheme() : next;
+        applyTheme(actualTheme);
+    };
+
+    // 初始化主题
+    applyTheme(getCurrentTheme());
+
+    // 监听系统主题变化（仅当用户选择 'auto' 时生效）
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        const stored = localStorage.getItem('theme');
+        if (!stored || stored === 'auto') {
+            applyTheme(e.matches ? 'dark' : 'light');
+        }
+    });
+
+    // 绑定切换按钮
+    themeToggle.addEventListener('click', cycleTheme);
 }
 
 // ===== Start =====
 init();
+setupLanguageSwitcher();
+setupThemeSystem();
